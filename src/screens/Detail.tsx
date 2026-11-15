@@ -8,6 +8,7 @@ import { TitleArt } from '../ui/Hero';
 import { CheckIcon, PlayIcon, PlusIcon, RestartIcon } from '../ui/Icons';
 import { RetryMessage } from '../ui/RetryMessage';
 import { Row, RowFrame } from '../ui/Row';
+import { t } from '../i18n';
 
 function EpisodeCard({ episode, onSelect }: { episode: Item; onSelect: () => void }) {
   const { client } = useApp();
@@ -22,7 +23,7 @@ function EpisodeCard({ episode, onSelect }: { episode: Item; onSelect: () => voi
         {percent > 0 && percent < 100 && <span className="card-progress"><span style={{ width: `${percent}%` }} /></span>}
       </div>
       <div className="card-caption">
-        <div className="card-sub upper">Folge {episode.IndexNumber}{episode.RunTimeTicks ? ` · ${formatRuntime(episode.RunTimeTicks)}` : ''}</div>
+        <div className="card-sub upper">{t('Episode')} {episode.IndexNumber}{episode.RunTimeTicks ? ` · ${formatRuntime(episode.RunTimeTicks)}` : ''}</div>
         <div className="card-title">{episode.Name}</div>
         {episode.Overview && <div className="card-overview spoiler-text">{episode.Overview}</div>}
       </div>
@@ -77,20 +78,20 @@ function InfoGrid({ item }: { item: Item }) {
 
   const entries: Array<[string, string]> = [
     ['Genre', item.Genres?.join(', ') ?? ''],
-    ['Regie', directors.join(', ')],
-    ['Drehbuch', writers.join(', ')],
+    [t('Director'), directors.join(', ')],
+    [t('Writer'), writers.join(', ')],
     ['Studio', studios.join(', ')],
-    ['Erschienen', item.ProductionYear ? String(item.ProductionYear) : ''],
-    ['Laufzeit', formatRuntime(item.RunTimeTicks)],
-    ['Bewertung', item.CommunityRating ? `${item.CommunityRating.toFixed(1)} / 10` : ''],
-    ['Tonspuren', audio.join(', ')],
-    ['Untertitel', subtitles.join(', ')],
+    [t('Released'), item.ProductionYear ? String(item.ProductionYear) : ''],
+    [t('Runtime'), formatRuntime(item.RunTimeTicks)],
+    [t('Rating'), item.CommunityRating ? `${item.CommunityRating.toFixed(1)} / 10` : ''],
+    [t('Audio tracks'), audio.join(', ')],
+    [t('Subtitles'), subtitles.join(', ')],
   ].filter((entry): entry is [string, string] => Boolean(entry[1]));
 
   if (!entries.length) return null;
   return (
     <section className="detail-section info-section">
-      <h2 className="row-title">Informationen</h2>
+      <h2 className="row-title">{t('Information')}</h2>
       <dl className="info-grid">
         {entries.map(([term, value]) => (
           <div key={term}><dt>{term}</dt><dd>{value}</dd></div>
@@ -121,11 +122,11 @@ export function DetailScreen({ id }: { id: string }) {
     [id, item?.Type],
   );
 
-  // Bei Serien erst fokussieren, wenn feststeht, welche Folge der Abspielknopf startet.
+  // For shows, only focus once it is clear which episode the play button starts.
   const page = useInitialFocus(Boolean(item) && (!isSeries || Boolean(nextUp.data ?? firstEpisode.data)));
 
   if (error && !item) {
-    return <div className="page"><RetryMessage title="Laden fehlgeschlagen" message={error.message} /></div>;
+    return <div className="page"><RetryMessage title={t('Loading failed')} message={error.message} /></div>;
   }
   if (!item) return <div className="page" ref={page} />;
 
@@ -136,9 +137,9 @@ export function DetailScreen({ id }: { id: string }) {
   const remaining = canResume && target?.RunTimeTicks ? target.RunTimeTicks - position : 0;
   const isPlayable = item.Type !== 'BoxSet' && Boolean(target);
 
-  let playLabel = 'Abspielen';
-  if (canResume) playLabel = 'Fortsetzen';
-  else if (isSeries && target) playLabel = `${episodeLabel(target)} abspielen`;
+  let playLabel = t('Play');
+  if (canResume) playLabel = t('Resume');
+  else if (isSeries && target) playLabel = t('Play {episode}', { episode: episodeLabel(target) });
 
   const toggleFavorite = async () => {
     const next = !item.UserData?.IsFavorite;
@@ -184,24 +185,24 @@ export function DetailScreen({ id }: { id: string }) {
                   {canResume && (
                     <span className="btn-progress"><span style={{ width: `${percent}%` }} /></span>
                   )}
-                  {remaining > 0 && <span className="btn-note">noch {formatRuntime(remaining)}</span>}
+                  {remaining > 0 && <span className="btn-note">{t('{time} left', { time: formatRuntime(remaining) })}</span>}
                 </button>
               )}
               {canResume && target && (
                 <button type="button" className="btn btn-glass" data-focusable onClick={() => play(target, { fromStart: true })}>
-                  <RestartIcon /><span>Von vorn</span>
+                  <RestartIcon /><span>{t('From the start')}</span>
                 </button>
               )}
               {isEpisode && item.SeriesId && (
                 <button type="button" className="btn btn-glass" data-focusable onClick={() => push({ kind: 'detail', id: item.SeriesId! })}>
-                  <span>Zur Serie</span>
+                  <span>{t('Go to show')}</span>
                 </button>
               )}
-              <button type="button" className="btn btn-glass btn-round" data-focusable aria-label={item.UserData?.IsFavorite ? 'Von der Merkliste entfernen' : 'Zur Merkliste hinzufügen'} onClick={toggleFavorite}>
+              <button type="button" className="btn btn-glass btn-round" data-focusable aria-label={item.UserData?.IsFavorite ? t('Remove from my list') : t('Add to my list')} onClick={toggleFavorite}>
                 {item.UserData?.IsFavorite ? <CheckIcon /> : <PlusIcon />}
               </button>
               <button type="button" className={`btn btn-glass ${item.UserData?.Played ? 'btn-on' : ''}`} data-focusable onClick={togglePlayed}>
-                <CheckIcon /><span>{item.UserData?.Played ? 'Gesehen' : 'Als gesehen markieren'}</span>
+                <CheckIcon /><span>{item.UserData?.Played ? t('Watched') : t('Mark as watched')}</span>
               </button>
             </div>
           </div>
@@ -209,21 +210,21 @@ export function DetailScreen({ id }: { id: string }) {
 
         <div className="detail-body">
           {isSeries && <Episodes series={item} preferredSeasonId={nextUp.data?.SeasonId ?? firstEpisode.data?.SeasonId} />}
-          {item.Type === 'BoxSet' && <Row title="In dieser Sammlung" items={children.data} variant="poster" />}
+          {item.Type === 'BoxSet' && <Row title={t('In this collection')} items={children.data} variant="poster" />}
           {people.length > 0 && (
-            <RowFrame title="Besetzung und Crew">
+            <RowFrame title={t('Cast and crew')}>
               {people.map((person) => (
                 <PersonCard
                   key={`${person.Id}-${person.Role ?? person.Type}`}
                   name={person.Name ?? ''}
-                  role={person.Type === 'Director' ? 'Regie' : person.Role}
+                  role={person.Type === 'Director' ? t('Director') : person.Role}
                   src={person.PrimaryImageTag ? client.imageUrl({ itemId: person.Id!, type: 'Primary', tag: person.PrimaryImageTag }, 300) : null}
                   onSelect={() => push({ kind: 'grid', title: person.Name ?? 'Person', query: { personIds: [person.Id!], includeItemTypes: ['Movie', 'Series'], sortBy: ['ProductionYear'], sortOrder: 'Descending' } })}
                 />
               ))}
             </RowFrame>
           )}
-          <Row title="Das könnte dir auch gefallen" items={similar.data} variant="poster" onSelect={open} />
+          <Row title={t('You might also like')} items={similar.data} variant="poster" onSelect={open} />
           <InfoGrid item={item} />
         </div>
       </div>

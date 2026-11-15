@@ -7,127 +7,127 @@ import { pickBest, revealOffset, scoreMove, type Box } from './focus/spatial';
 
 const box = (left: number, top: number, width = 100, height = 100): Box => ({ left, top, right: left + width, bottom: top + height });
 
-describe('Fokus-Navigation', () => {
+describe('Focus navigation', () => {
   const current = box(100, 100);
   const rightNeighbor = box(220, 100);
   const farRight = box(340, 100);
   const below = box(100, 300);
   const belowRight = box(400, 300);
 
-  it('wählt seitwärts den direkten Nachbarn', () => {
+  it('picks the direct neighbor sideways', () => {
     expect(pickBest(current, [farRight, rightNeighbor], 'right')).toBe(1);
   });
 
-  it('springt am Reihenende nicht seitwärts in eine andere Reihe', () => {
+  it('does not jump sideways into another row at the end of a row', () => {
     expect(scoreMove(current, belowRight, 'right')).toBeNull();
     expect(pickBest(current, [below, belowRight], 'right')).toBe(-1);
   });
 
-  it('wählt nach unten die Karte, die am besten darunter liegt', () => {
+  it('picks the card that lies best below when moving down', () => {
     expect(pickBest(current, [belowRight, below], 'down')).toBe(1);
   });
 
-  it('ignoriert alles, was entgegen der Richtung liegt', () => {
+  it('ignores everything against the direction', () => {
     expect(pickBest(current, [below], 'up')).toBe(-1);
   });
 
-  it('bevorzugt die nähere von zwei Reihen', () => {
+  it('prefers the nearer of two rows', () => {
     expect(pickBest(current, [box(100, 600), box(100, 300)], 'down')).toBe(1);
   });
 });
 
-describe('Scrollposition', () => {
-  it('bleibt stehen, wenn das Element schon sichtbar ist', () => {
+describe('Scroll position', () => {
+  it('stays put when the element is already visible', () => {
     expect(revealOffset(0, 1000, 200, 400, 50, 0, 5000)).toBe(0);
   });
-  it('scrollt zurück, wenn das Element links aus dem Bild ist', () => {
+  it('scrolls back when the element is off the left edge', () => {
     expect(revealOffset(600, 1000, 300, 500, 50, 0, 5000)).toBe(250);
   });
-  it('scrollt vor und lässt eine Vorschau auf das nächste Element', () => {
+  it('scrolls forward and leaves a peek at the next element', () => {
     expect(revealOffset(0, 1000, 900, 1100, 50, 70, 5000)).toBe(220);
   });
-  it('bleibt in den Grenzen des Scrollbereichs', () => {
+  it('stays within the scroll range', () => {
     expect(revealOffset(0, 1000, 900, 1100, 50, 70, 100)).toBe(100);
     expect(revealOffset(100, 1000, 10, 200, 50, 0, 5000)).toBe(0);
   });
 });
 
-describe('Serveradresse', () => {
-  it('ergänzt bei einem bloßen Hostnamen den Standardport', () => {
+describe('Server address', () => {
+  it('adds the default port to a bare host name', () => {
     expect(serverCandidates('nas')[0]).toBe('http://nas:8096');
   });
-  it('behält einen angegebenen Port', () => {
+  it('keeps a given port', () => {
     expect(serverCandidates('192.168.1.20:8920')).toEqual(['http://192.168.1.20:8920', 'https://192.168.1.20:8920']);
   });
-  it('verändert eine vollständige Adresse nicht, außer dem Schrägstrich am Ende', () => {
+  it('leaves a full address unchanged except for the trailing slash', () => {
     expect(serverCandidates(' https://jf.example.org/jellyfin/ ')).toEqual(['https://jf.example.org/jellyfin']);
   });
-  it('gibt bei leerer Eingabe nichts zurück', () => {
+  it('returns nothing for empty input', () => {
     expect(serverCandidates('   ')).toEqual([]);
   });
 });
 
-describe('Anfragen', () => {
-  it('lässt leere Werte aus und verbindet Listen mit Komma', () => {
+describe('Requests', () => {
+  it('skips empty values and joins lists with commas', () => {
     expect(buildQuery({ a: 1, b: undefined, c: '', d: ['x', 'y'], e: [], f: false })).toBe('?a=1&d=x%2Cy&f=false');
   });
-  it('gibt ohne Parameter einen leeren Text zurück', () => {
+  it('returns an empty text without parameters', () => {
     expect(buildQuery({})).toBe('');
   });
-  it('baut den Jellyfin-Auth-Header', () => {
+  it('builds the Jellyfin auth header', () => {
     const header = authHeader('abc', 'tok');
     expect(header.startsWith('MediaBrowser ')).toBe(true);
     expect(header).toContain('DeviceId="abc"');
     expect(header).toContain('Token="tok"');
     expect(authHeader('abc')).not.toContain('Token');
   });
-  it('rechnet Sekunden in Ticks um', () => {
+  it('converts seconds to ticks', () => {
     expect(secondsToTicks(1.5)).toBe(15_000_000);
   });
 });
 
-describe('Stream-Auswahl', () => {
+describe('Stream choice', () => {
   const url = 'http://srv:8096';
 
-  it('nimmt Direct Play, wenn der Server es erlaubt', () => {
+  it('uses direct play when the server allows it', () => {
     const result = chooseStream(url, 'tok', 'id1', { Id: 'm1', SupportsDirectPlay: true, TranscodingUrl: '/x.m3u8' }, false);
     expect(result.method).toBe('DirectPlay');
     expect(result.isHls).toBe(false);
     expect(result.url).toBe('http://srv:8096/Videos/id1/stream?static=true&mediaSourceId=m1&api_key=tok');
   });
-  it('nimmt HLS, wenn Direct Play nicht geht', () => {
+  it('uses HLS when direct play is not possible', () => {
     const result = chooseStream(url, 'tok', 'id1', { Id: 'm1', SupportsDirectPlay: false, TranscodingUrl: '/videos/id1/master.m3u8?x=1' }, false);
     expect(result).toEqual({ url: 'http://srv:8096/videos/id1/master.m3u8?x=1', isHls: true, method: 'Transcode' });
   });
-  it('übergeht Direct Play, wenn Transkodierung erzwungen ist', () => {
+  it('skips direct play when transcoding is forced', () => {
     const result = chooseStream(url, 'tok', 'id1', { Id: 'm1', SupportsDirectPlay: true, TranscodingUrl: '/a.m3u8' }, true);
     expect(result.isHls).toBe(true);
   });
-  it('meldet einen Fehler, wenn nichts abspielbar ist', () => {
+  it('reports an error when nothing is playable', () => {
     expect(() => chooseStream(url, 'tok', 'id1', { Id: 'm1', SupportsDirectPlay: false }, false)).toThrow();
   });
 });
 
-describe('Geräteprofil', () => {
-  it('meldet ohne Hardware-Decoder nur H.264 und kein MKV', () => {
+describe('Device profile', () => {
+  it('reports only H.264 and no MKV without a hardware decoder', () => {
     const profile = buildDeviceProfile(10_000_000, () => false);
     const mp4 = profile.DirectPlayProfiles?.find((p) => p.Container?.includes('mp4'));
     expect(mp4?.VideoCodec).toBe('h264');
     expect(profile.DirectPlayProfiles?.some((p) => p.Container?.includes('mkv'))).toBe(false);
     expect(profile.MaxStreamingBitrate).toBe(10_000_000);
   });
-  it('meldet HEVC, wenn der Browser es kann', () => {
+  it('reports HEVC when the browser supports it', () => {
     const profile = buildDeviceProfile(10_000_000, (mime) => mime.includes('hvc1'));
     expect(profile.DirectPlayProfiles?.[0].VideoCodec).toContain('hevc');
   });
-  it('brennt Bilduntertitel ein und liefert Text extern', () => {
+  it('burns in image subtitles and delivers text externally', () => {
     const profile = buildDeviceProfile(1, () => false);
     expect(profile.SubtitleProfiles?.find((s) => s.Format === 'pgssub')?.Method).toBe('Encode');
     expect(profile.SubtitleProfiles?.find((s) => s.Format === 'srt')?.Method).toBe('External');
   });
 });
 
-describe('Bilder', () => {
+describe('Images', () => {
   const episode = {
     Id: 'e1',
     Type: 'Episode' as const,
@@ -140,35 +140,35 @@ describe('Bilder', () => {
     ParentLogoImageTag: 'lg',
   };
 
-  it('nimmt bei Episoden das Plakat der Serie', () => {
+  it('uses the show’s poster for episodes', () => {
     expect(posterRef(episode)?.itemId).toBe('s1');
   });
-  it('nimmt für Querformat das Episodenbild', () => {
+  it('uses the episode image for landscape', () => {
     expect(landscapeRef(episode)).toMatchObject({ itemId: 'e1', tag: 'ep' });
   });
-  it('erbt Backdrop und Logo von der Serie', () => {
+  it('inherits backdrop and logo from the show', () => {
     expect(backdropRef(episode)).toMatchObject({ itemId: 's1', type: 'Backdrop', tag: 'bd' });
     expect(logoRef(episode)).toMatchObject({ itemId: 's1', tag: 'lg' });
   });
-  it('gibt null zurück, wenn es kein Bild gibt', () => {
+  it('returns null when there is no image', () => {
     expect(landscapeRef({ Id: 'x' })).toBeNull();
     expect(logoRef({ Id: 'x' })).toBeNull();
   });
 });
 
-describe('Formatierung', () => {
-  it('formatiert Laufzeiten', () => {
-    expect(formatRuntime(45 * 600_000_000)).toBe('45 Min.');
-    expect(formatRuntime(128 * 600_000_000)).toBe('2 Std. 8 Min.');
-    expect(formatRuntime(120 * 600_000_000)).toBe('2 Std.');
+describe('Formatting', () => {
+  it('formats runtimes', () => {
+    expect(formatRuntime(45 * 600_000_000)).toBe('45 min');
+    expect(formatRuntime(128 * 600_000_000)).toBe('2 h 8 min');
+    expect(formatRuntime(120 * 600_000_000)).toBe('2 h');
     expect(formatRuntime(null)).toBe('');
   });
-  it('formatiert Zeiten im Player', () => {
+  it('formats times in the player', () => {
     expect(formatClock(65)).toBe('1:05');
     expect(formatClock(3725)).toBe('1:02:05');
     expect(formatClock(NaN)).toBe('0:00');
   });
-  it('leitet Plaketten aus den Streams ab', () => {
+  it('derives badges from the streams', () => {
     const badges = mediaBadges({
       OfficialRating: 'FSK 12',
       MediaSources: [{ MediaStreams: [
@@ -184,16 +184,16 @@ describe('Formatierung', () => {
 describe('Trickplay', () => {
   const info = { Width: 320, Height: 180, TileWidth: 10, TileHeight: 10, ThumbnailCount: 250, Interval: 10_000 };
 
-  it('findet die Kachel für den Anfang', () => {
+  it('finds the tile for the start', () => {
     expect(trickplayTile(info, 0)).toEqual({ sheet: 0, column: 0, row: 0 });
   });
-  it('rechnet Zeile und Spalte aus', () => {
+  it('computes row and column', () => {
     expect(trickplayTile(info, 125)).toEqual({ sheet: 0, column: 2, row: 1 });
   });
-  it('wechselt nach 100 Bildern auf das nächste Blatt', () => {
+  it('moves to the next sheet after 100 images', () => {
     expect(trickplayTile(info, 1000)).toEqual({ sheet: 1, column: 0, row: 0 });
   });
-  it('geht nicht über das letzte Bild hinaus', () => {
+  it('does not go past the last image', () => {
     expect(trickplayTile(info, 99_999)).toEqual({ sheet: 2, column: 9, row: 4 });
   });
 });

@@ -1,9 +1,10 @@
 import type { Item } from '../api/types';
 import type { SortKey } from './settings';
+import { t } from '../i18n';
 
 export const ALPHABET = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
 
-/** Buchstabe für die A–Z-Einordnung: Umlaute zählen zum Grundbuchstaben, alles andere zu "#". */
+/** Letter for the A–Z grouping: umlauts count as their base letter, everything else as "#". */
 export function letterOf(item: Item): string {
   const name = (item.SortName || item.Name || '').trim();
   const first = name.normalize('NFD').replace(/\p{M}/gu, '').charAt(0).toUpperCase();
@@ -12,16 +13,16 @@ export function letterOf(item: Item): string {
 
 export function groupKeyFor(sort: SortKey): ((item: Item) => string) | null {
   if (sort === 'SortName') return letterOf;
-  if (sort === 'ProductionYear') return (item) => (item.ProductionYear ? String(item.ProductionYear) : 'Ohne Jahr');
+  if (sort === 'ProductionYear') return (item) => (item.ProductionYear ? String(item.ProductionYear) : t('No year'));
   return null;
 }
 
-/** Überschriften lohnen sich erst, wenn jede im Schnitt mindestens drei Titel gliedert. */
+/** Headings are only worth it when each one groups at least three titles on average. */
 export function worthGrouping(items: Item[], groupKey: (item: Item) => string): boolean {
   return new Set(items.map(groupKey)).size * 3 <= items.length;
 }
 
-/** Index des ersten Titels je Buchstabe. */
+/** Index of the first title per letter. */
 export function letterStarts(items: Item[]): Map<string, number> {
   const starts = new Map<string, number>();
   items.forEach((item, index) => {
@@ -37,7 +38,7 @@ export interface VRow {
   label?: string;
   top: number;
   height: number;
-  /** Titel-Indizes [start, end). Bei Überschriften der erste Titel der Gruppe. */
+  /** Title indices [start, end). For headings, the first title of the group. */
   start: number;
   end: number;
 }
@@ -74,7 +75,7 @@ export function layoutRows(items: Item[], options: LayoutOptions): { rows: VRow[
   return { rows, height: top };
 }
 
-/** Index der ersten Reihe, deren Unterkante unter y liegt. */
+/** Index of the first row whose bottom edge is below y. */
 function firstAtOrAfter(rows: VRow[], y: number): number {
   let low = 0;
   let high = rows.length;
@@ -86,7 +87,7 @@ function firstAtOrAfter(rows: VRow[], y: number): number {
   return low;
 }
 
-/** Bereich der Reihen [from, to], die den Ausschnitt [top, bottom] berühren. */
+/** Range of rows [from, to] that touch the viewport [top, bottom]. */
 export function visibleRange(rows: VRow[], top: number, bottom: number): [number, number] {
   if (!rows.length) return [0, -1];
   const from = Math.min(firstAtOrAfter(rows, top), rows.length - 1);
@@ -103,6 +104,6 @@ export function rowOfItem(rows: VRow[], index: number): number {
     if (rows[mid].start <= index) low = mid;
     else high = mid - 1;
   }
-  // Überschrift und erste Titelreihe haben denselben Startindex: Gemeint ist die Titelreihe.
+  // A heading and the first title row share a start index: the title row is meant.
   return low;
 }

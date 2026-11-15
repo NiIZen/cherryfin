@@ -7,6 +7,7 @@ import { Picture, tiltHandlers } from '../ui/Card';
 import { ChevronRight, PlusIcon, ServerIcon } from '../ui/Icons';
 import { TvKeyboard } from '../ui/TvKeyboard';
 import { isTV } from '../tv/platform';
+import { t } from '../i18n';
 
 type Step = 'server' | 'users' | 'password';
 interface Server { url: string; name: string }
@@ -14,12 +15,12 @@ interface Discovered { id: string; name: string; address: string }
 
 function errorText(error: unknown): string {
   if (error instanceof TypeError || (error instanceof DOMException && error.name === 'TimeoutError')) {
-    return 'Der Server ist nicht erreichbar. Stimmen Adresse und Port?';
+    return t('The server cannot be reached. Are the address and port correct?');
   }
-  return error instanceof Error ? error.message : 'Unbekannter Fehler';
+  return error instanceof Error ? error.message : t('Unknown error');
 }
 
-/** Am Computer ein normales Eingabefeld. Auf dem Fernseher ein Knopf, die Eingabe läuft über die Bildschirmtastatur. */
+/** A normal input field on the computer. On the TV a button; typing happens on the on-screen keyboard. */
 function Field({ value, placeholder, label, secret, autoFocus, active, autoComplete, onChange, onActivate }: {
   value: string;
   placeholder: string;
@@ -128,7 +129,7 @@ export function ConnectScreen({ onSession, onDemo }: { onSession: (session: Sess
         <form className="connect-panel" onSubmit={(e) => { e.preventDefault(); void connect(address); }}>
           <img className="connect-logo" src={logoUrl} alt="" />
           <h1>Cherryfin</h1>
-          <p className="connect-lead">Verbinde dich mit deinem Jellyfin-Server.</p>
+          <p className="connect-lead">{t('Connect to your Jellyfin server.')}</p>
           {discovered.length > 0 && (
             <div className="connect-list">
               {discovered.map((d) => (
@@ -138,19 +139,19 @@ export function ConnectScreen({ onSession, onDemo }: { onSession: (session: Sess
               ))}
             </div>
           )}
-          <Field value={address} placeholder="z. B. 192.168.1.20:8096" label="Serveradresse" autoFocus active onChange={setAddress} />
+          <Field value={address} placeholder="z. B. 192.168.1.20:8096" label={t('Server address')} autoFocus active onChange={setAddress} />
           {isTV && <TvKeyboard value={address} onChange={setAddress} />}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="connect-actions">
-            <button type="submit" className="btn btn-primary" data-focusable disabled={busy}>{busy ? 'Verbinde …' : 'Verbinden'}</button>
-            <button type="button" className="btn btn-glass" data-focusable onClick={onDemo}>Demo ansehen</button>
+            <button type="submit" className="btn btn-primary" data-focusable disabled={busy}>{busy ? t('Connecting …') : t('Connect')}</button>
+            <button type="button" className="btn btn-glass" data-focusable onClick={onDemo}>{t('Try the demo')}</button>
           </div>
         </form>
       )}
 
       {step === 'users' && server && (
         <div className="connect-panel wide">
-          <h1>Wer schaut gerade?</h1>
+          <h1>{t('Who is watching?')}</h1>
           <p className="connect-lead">{server.name}</p>
           <div className="user-grid" data-focus-group>
             {users.map((user) => (
@@ -164,31 +165,31 @@ export function ConnectScreen({ onSession, onDemo }: { onSession: (session: Sess
                 <div className="card-caption"><div className="card-title">{user.Name}</div></div>
               </button>
             ))}
-            <button type="button" className="card card-user" data-focusable aria-label="Anderer Benutzer" onClick={() => { setUsername(''); setPassword(''); setUsernameLocked(false); setStep('password'); }} {...tiltHandlers()}>
+            <button type="button" className="card card-user" data-focusable aria-label={t('Other user')} onClick={() => { setUsername(''); setPassword(''); setUsernameLocked(false); setStep('password'); }} {...tiltHandlers()}>
               <div className="card-media"><div className="avatar-letter muted"><PlusIcon /></div><div className="card-shine" /></div>
-              <div className="card-caption"><div className="card-title">Anderer</div></div>
+              <div className="card-caption"><div className="card-title">{t('Other')}</div></div>
             </button>
           </div>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <button type="button" className="btn btn-glass connect-back" data-focusable onClick={() => setStep('server')}>Anderer Server</button>
+          <button type="button" className="btn btn-glass connect-back" data-focusable onClick={() => setStep('server')}>{t('Other server')}</button>
         </div>
       )}
 
       {step === 'password' && server && (
         <form className="connect-panel" onSubmit={(e) => { e.preventDefault(); void login(username, password); }}>
-          <h1>{usernameLocked ? username : 'Anmelden'}</h1>
+          <h1>{usernameLocked ? username : t('Sign in')}</h1>
           <p className="connect-lead">{server.name}</p>
           {!usernameLocked && (
-            <Field value={username} placeholder="Benutzername" label="Benutzername" autoComplete="username" autoFocus active={field === 'username'} onChange={setUsername} onActivate={() => setField('username')} />
+            <Field value={username} placeholder={t('Username')} label={t('Username')} autoComplete="username" autoFocus active={field === 'username'} onChange={setUsername} onActivate={() => setField('username')} />
           )}
-          <Field value={password} placeholder="Passwort" label="Passwort" secret autoComplete="current-password" autoFocus={usernameLocked} active={usernameLocked || field === 'password'} onChange={setPassword} onActivate={() => setField('password')} />
+          <Field value={password} placeholder={t('Password')} label={t('Password')} secret autoComplete="current-password" autoFocus={usernameLocked} active={usernameLocked || field === 'password'} onChange={setPassword} onActivate={() => setField('password')} />
           {isTV && (usernameLocked || field === 'password'
             ? <TvKeyboard value={password} onChange={setPassword} />
             : <TvKeyboard value={username} onChange={setUsername} />)}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="connect-actions">
-            <button type="submit" className="btn btn-primary" data-focusable disabled={busy}>{busy ? 'Melde an …' : 'Anmelden'}</button>
-            <button type="button" className="btn btn-glass" data-focusable onClick={() => { setError(''); setStep(users.length ? 'users' : 'server'); }}>Zurück</button>
+            <button type="submit" className="btn btn-primary" data-focusable disabled={busy}>{busy ? t('Signing in …') : t('Sign in')}</button>
+            <button type="button" className="btn btn-glass" data-focusable onClick={() => { setError(''); setStep(users.length ? 'users' : 'server'); }}>{t('Back')}</button>
           </div>
         </form>
       )}

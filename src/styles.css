@@ -1,5 +1,5 @@
-/* Die gesamte Oberfläche ist in rem aufgebaut: 1rem entspricht 16px bei 1920 Pixeln Breite.
-   So skaliert sie mit dem Fenster und wirkt immer wie auf einem Fernseher. */
+/* The whole interface is built in rem: 1rem equals 16px at 1920 pixels wide.
+   So it scales with the window and always looks like it does on a TV. */
 :root {
   --bg: #000;
   --focus-bg: #fff;
@@ -59,7 +59,7 @@ html[data-input='keyboard'], html[data-input='keyboard'] * { cursor: none !impor
 
 .boot { height: 100%; background: var(--bg); }
 
-/* Ziehbereich des rahmenlosen Fensters. */
+/* Drag area of the frameless window. */
 .drag-strip {
   position: fixed;
   inset: 0 0 auto 0;
@@ -103,7 +103,7 @@ html[data-input='keyboard'], html[data-input='keyboard'] * { cursor: none !impor
 html[data-input='keyboard'] .back-btn { opacity: 0; pointer-events: none; }
 .hide-overlay ~ .back-btn { opacity: 0; pointer-events: none; }
 
-/* ---------- Tab-Leiste ---------- */
+/* ---------- Tab bar ---------- */
 
 .tabbar-wrap {
   position: absolute;
@@ -267,7 +267,7 @@ html[data-input='keyboard'] .back-btn { opacity: 0; pointer-events: none; }
 }
 .hero-dots span.active { background: #fff; transform: scale(1.15); }
 
-/* ---------- Knöpfe ---------- */
+/* ---------- Buttons ---------- */
 
 .btn {
   position: relative;
@@ -312,7 +312,7 @@ html[data-input='keyboard'] .back-btn { opacity: 0; pointer-events: none; }
 .btn-progress > span { display: block; height: 100%; background: #000; }
 .btn-note { font-size: 1rem; font-weight: 500; opacity: 0.66; }
 
-/* ---------- Reihen ---------- */
+/* ---------- Rows ---------- */
 
 .rows { position: relative; z-index: 2; padding-bottom: 5rem; }
 .rows-overlap { margin-top: -7.25rem; }
@@ -361,7 +361,7 @@ html[data-input='keyboard'] .back-btn { opacity: 0; pointer-events: none; }
 .row-arrow.right { right: 0; background: linear-gradient(to left, rgba(0, 0, 0, 0.75), transparent); }
 html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 
-/* ---------- Karten ---------- */
+/* ---------- Cards ---------- */
 
 .card {
   --rx: 0deg;
@@ -507,7 +507,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 }
 .card:focus .card-overview { color: var(--text-2); }
 
-/* Plakate zeigen ihren Text nur im Fokus, wie im Regal der Apple-TV-App. */
+/* Posters only show their text when focused, like the shelf in the Apple TV app. */
 .card-poster .card-caption { opacity: 0; transition: opacity 0.2s, transform 0.28s var(--spring); }
 .card-poster:focus .card-caption { opacity: 1; }
 
@@ -526,7 +526,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 }
 .card-more:focus .card-more-inner { color: #fff; }
 
-/* Anstoßen am Rand: Hier geht es nicht weiter. */
+/* Bump at the edge: there is nowhere further to go. */
 .bump-left { animation: bump-left 0.26s var(--smooth); }
 .bump-right { animation: bump-right 0.26s var(--smooth); }
 .bump-up { animation: bump-up 0.26s var(--smooth); }
@@ -536,7 +536,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 @keyframes bump-up { 40% { translate: 0 -0.5rem; } }
 @keyframes bump-down { 40% { translate: 0 0.5rem; } }
 
-/* ---------- Detailseite ---------- */
+/* ---------- Detail page ---------- */
 
 .detail { position: absolute; inset: 0; background: var(--bg); }
 .detail .page { background: transparent; }
@@ -613,7 +613,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 .info-grid dt { font-size: 1rem; font-weight: 600; color: var(--text-2); margin-bottom: 0.25rem; }
 .info-grid dd { margin: 0; font-size: 1.0625rem; color: var(--text-3); line-height: 1.4; }
 
-/* ---------- Übersicht (A–Z, Raster und Liste) ---------- */
+/* ---------- Overview (A–Z, grid and list) ---------- */
 
 .overview { position: absolute; inset: 0; }
 .overview-head { padding: 6.5rem var(--gutter) 0.5rem; }
@@ -739,7 +739,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 .view-panel .list-row { min-height: 3.5rem; font-size: 1.1875rem; }
 .view-panel > .list-row { margin-top: 1rem; }
 
-/* ---------- Suche ---------- */
+/* ---------- Search ---------- */
 
 .search-head { padding: 7.5rem var(--gutter) 1rem; text-align: center; }
 .search-query {
@@ -778,7 +778,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 .key-wide { width: 4rem; }
 .key:focus { background: var(--focus-bg); color: var(--focus-fg); transform: scale(1.22); box-shadow: 0 0.625rem 1.25rem rgba(0, 0, 0, 0.55); z-index: 2; }
 
-/* ---------- Einstellungen und Listen ---------- */
+/* ---------- Settings and lists ---------- */
 
 .settings-page { padding: 7rem var(--gutter) 4rem; }
 .settings-layout { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 3.5rem; max-width: 100rem; margin: 0 auto; }
@@ -856,7 +856,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 .screen-message h2 { font-size: 2rem; font-weight: 600; margin-bottom: 0.5rem; }
 .screen-message p { color: var(--text-2); }
 
-/* ---------- Anmeldung ---------- */
+/* ---------- Sign-in ---------- */
 
 .connect {
   position: absolute;
@@ -1193,7 +1193,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
   *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; }
 }
 
-/* ---------- Einstellbares Verhalten ---------- */
+/* ---------- Configurable behavior ---------- */
 
 :root[data-labels='always'] .row .card-caption { opacity: 1; }
 :root[data-labels='focus'] .row .card-caption { opacity: 0; transition: opacity 0.2s, transform 0.28s var(--spring); }
@@ -1211,7 +1211,7 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 :root[data-glass='off'] * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 :root[data-glass='off'] .detail-body { background: var(--bg); }
 
-/* ---------- Keine Verbindung ---------- */
+/* ---------- No connection ---------- */
 
 .offline {
   position: fixed;
@@ -1245,14 +1245,14 @@ html:not([data-input='keyboard']) .row-viewport:hover .row-arrow { opacity: 1; }
 .screen-message .btn { margin-top: 1.5rem; }
 .settings-note.below { margin: 0.875rem 1.25rem 0; line-height: 1.45; }
 
-/* ---------- Player-Oberfläche über dem mpv-Fenster ---------- */
+/* ---------- Player interface above the mpv window ---------- */
 
 html.player-window, html.player-window body, html.player-window #root { background: transparent; }
 .player.external { background: transparent; }
 .player-surface { position: absolute; inset: 0; }
 .menu-note { padding: 0.5rem 0.875rem 0.375rem; font-size: 1rem; color: var(--text-2); border-top: 1px solid var(--hairline); margin-top: 0.375rem; white-space: nowrap; }
 
-/* ---------- Fernseher ---------- */
+/* ---------- TV ---------- */
 
 html.tv .drag-strip { display: none; }
 html.tv .connect-panel { width: 62rem; }
@@ -1269,7 +1269,7 @@ html.tv .connect-panel { width: 62rem; }
 .tv-keyboard .key-space { width: 22rem; }
 .tv-keyboard .key-on { background: var(--glass-strong); }
 
-/* ---------- Ältere Engines: Seitenverhältnis (vor Chromium 88) ---------- */
+/* ---------- Older engines: aspect ratio (before Chromium 88) ---------- */
 
 @supports not (aspect-ratio: 1) {
   .card-media { height: 0; padding-top: 56.25%; }
@@ -1280,7 +1280,7 @@ html.tv .connect-panel { width: 62rem; }
   .up-next-card { height: 9.5625rem; }
 }
 
-/* ---------- Ältere Engines: Abstände in Flex-Containern (vor Chromium 84) ---------- */
+/* ---------- Older engines: gaps in flex containers (before Chromium 84) ---------- */
 
 .no-flex-gap .row-scroller > * + *, .no-flex-gap .tabbar > * + *, .no-flex-gap .pill-row > * + * { margin-left: 0.625rem; }
 .no-flex-gap .row-scroller > * + * { margin-left: 1.75rem; }
@@ -1308,7 +1308,7 @@ html.tv .connect-panel { width: 62rem; }
 .no-flex-gap .round-btn, .no-flex-gap .key, .no-flex-gap .alpha-key, .no-flex-gap .swatch { text-align: center; }
 .no-flex-gap .player-info-row > * + * { margin-left: 2rem; }
 
-/* ---------- Einstellungen aus Fladder ---------- */
+/* ---------- Settings inspired by Fladder ---------- */
 
 :root[data-fit='cover'] .player-video { object-fit: cover; }
 :root[data-fit='fill'] .player-video { object-fit: fill; }
@@ -1347,20 +1347,20 @@ html.tv .connect-panel { width: 62rem; }
   transition: left 1.5s var(--smooth), top 1.5s var(--smooth);
 }
 
-/* ---------- Marke ---------- */
+/* ---------- Brand ---------- */
 .connect-logo { display: block; width: 9rem; height: 9rem; margin: 0 auto 0.5rem; }
 .player-saver .saver-logo { display: block; width: 7rem; height: 7rem; margin: 0 auto 1rem; }
 
-/* ---------- Tab-Leiste auf dem Fernseher ----------
-   Der Glaseffekt ist auf dem TV aus Leistungsgründen standardmäßig aus. Die kleine Leiste bleibt
-   trotzdem durchsichtig wie unter Windows, nur der Sparmodus macht sie deckend. */
+/* ---------- Tab bar on the TV ----------
+   The glass effect is off by default on the TV for performance. The small bar still stays
+   translucent like on Windows; only power saving makes it opaque. */
 html.tv[data-glass='off']:not([data-low-power='on']) .tabbar {
   background: rgba(38, 38, 42, 0.62);
   -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
   backdrop-filter: blur(40px) saturate(180%) !important;
 }
 
-/* webOS 5 (Chromium 68) kennt keine Unschärfe dahinter: etwas dunkler, damit die Schrift lesbar bleibt. */
+/* webOS 5 (Chromium 68) has no backdrop blur: a bit darker so the text stays readable. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html.tv[data-glass='off']:not([data-low-power='on']) .tabbar { background: rgba(30, 30, 34, 0.78); }
 }

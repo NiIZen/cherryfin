@@ -1,6 +1,6 @@
 /*
- * Ergänzt, was ältere webOS-Engines (ab Chromium 68) nicht kennen. Moderne Syntax übersetzt der Build,
- * fehlende Funktionen müssen hier nachgerüstet werden. Bereits vorhandene bleiben unangetastet.
+ * Adds what older webOS engines (from Chromium 68) lack. The build translates modern syntax;
+ * missing functions have to be added here. Existing ones are left untouched.
  */
 /* eslint-disable no-extend-native */
 
@@ -47,7 +47,7 @@ define(window, 'queueMicrotask', (callback: () => void) => {
 });
 
 if (typeof crypto !== 'undefined') {
-  // file:// gilt nicht als sicherer Kontext. Für eine Geräte-ID reicht das hier: Sie ist kein Geheimnis.
+  // file:// is not a secure context. This is enough for a device ID: it is not a secret.
   define(crypto, 'randomUUID', () => '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) => {
     const value = Number(c);
     return (value ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (value / 4)))).toString(16);
@@ -77,7 +77,7 @@ define(AbortSignal, 'any', (signals: AbortSignal[]) => {
   return controller.signal;
 });
 
-/** Abstände in Flex-Containern kann Chromium erst ab Version 84. Die Stylesheet-Regel braucht dafür ein Signal. */
+/** Chromium only supports gap in flex containers from version 84. The stylesheet rule needs a signal for it. */
 export function markMissingFeatures() {
   const box = document.createElement('div');
   box.style.cssText = 'display:flex;flex-direction:column;row-gap:1px;position:absolute;visibility:hidden';

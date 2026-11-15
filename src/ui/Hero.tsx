@@ -4,6 +4,7 @@ import { backdropRef, logoRef } from '../api/images';
 import { useApp } from '../app/context';
 import { metaLine } from '../app/format';
 import { PlayIcon, PlusIcon, CheckIcon } from './Icons';
+import { t } from '../i18n';
 
 export function TitleArt({ item, className }: { item: Item; className?: string }) {
   const { client } = useApp();
@@ -17,7 +18,7 @@ export function TitleArt({ item, className }: { item: Item; className?: string }
   return <h1 className={`title-text ${className ?? ''}`}>{name}</h1>;
 }
 
-/** Vollflächiger Hero-Bereich mit Überblendung, wie das obere Regal der Apple-TV-App. */
+/** Full-bleed hero area with crossfades, like the top shelf of the Apple TV app. */
 export function Hero({ items, autoFocus }: { items: Item[]; autoFocus?: boolean }) {
   const { client, open, play, bumpData, settings } = useApp();
   const [index, setIndex] = useState(0);
@@ -30,14 +31,14 @@ export function Hero({ items, autoFocus }: { items: Item[]; autoFocus?: boolean 
   useEffect(() => {
     if (count < 2 || hovering || settings.home.hero === 'static') return;
     const timer = setInterval(() => {
-      // Nur weiterdrehen, solange der Hero sichtbar ist.
+      // Only rotate while the hero is visible.
       const box = root.current?.getBoundingClientRect();
       if (box && box.bottom > box.height * 0.6 && box.width > 0) setIndex((i) => (i + 1) % count);
     }, settings.home.heroSeconds * 1000);
     return () => clearInterval(timer);
   }, [count, hovering, index, settings.home.hero, settings.home.heroSeconds]);
 
-  // Am Rand der Knopfreihe blättert links/rechts durch den Hero.
+  // At the edge of the button row, left/right pages through the hero.
   useEffect(() => {
     const el = root.current;
     if (!el || count < 2) return;
@@ -66,7 +67,7 @@ export function Hero({ items, autoFocus }: { items: Item[]; autoFocus?: boolean 
       <div className="hero-backdrops" aria-hidden="true">
         {items.map((entry, i) => {
           const ref = backdropRef(entry);
-          // Nur aktuelles und benachbarte Bilder laden.
+          // Only load the current and neighboring images.
           const near = i === index || i === (index + 1) % count || i === (index - 1 + count) % count;
           return (
             <div key={entry.Id} className={`hero-backdrop ${i === index ? 'active' : ''}`}>
@@ -82,12 +83,12 @@ export function Hero({ items, autoFocus }: { items: Item[]; autoFocus?: boolean 
         {item.Overview && <p className="hero-overview">{item.Overview}</p>}
         <div className="hero-actions" data-focus-group>
           <button type="button" className="btn btn-primary" data-focusable data-autofocus={autoFocus ? '' : undefined} onClick={() => (item.Type === 'Series' ? open(item) : play(item))}>
-            <PlayIcon /><span>{item.Type === 'Series' ? 'Ansehen' : 'Abspielen'}</span>
+            <PlayIcon /><span>{item.Type === 'Series' ? t('Watch') : t('Play')}</span>
           </button>
           <button type="button" className="btn btn-glass" data-focusable onClick={() => open(item)}>
             <span>Details</span>
           </button>
-          <button type="button" className="btn btn-glass btn-round" data-focusable aria-label={isFavorite ? 'Von der Merkliste entfernen' : 'Zur Merkliste hinzufügen'} onClick={toggleFavorite}>
+          <button type="button" className="btn btn-glass btn-round" data-focusable aria-label={isFavorite ? t('Remove from my list') : t('Add to my list')} onClick={toggleFavorite}>
             {isFavorite ? <CheckIcon /> : <PlusIcon />}
           </button>
         </div>

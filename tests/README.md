@@ -1,25 +1,26 @@
 # Tests
 
-Die Unit-Tests laufen mit `npm test` im Hauptordner.
+Run the unit tests with `npm test` in the main folder. Among other things, `src/i18n.test.ts` checks that every interface text has a German translation and that no German text is left in the code outside `src/i18n/de.ts`.
 
-Die Fenstertests starten die echte Electron-App gegen einen kleinen Jellyfin-Testserver (`e2e/mock-server.mjs`). Vorher einmal `npm run build` und in `tests/e2e` `npm install`.
+The window tests start the real Electron app against a small Jellyfin test server (`e2e/mock-server.mjs`). They run with the English interface (`--lang=en-US`), independent of the system language. Run `npm run build` first, and `npm install` once in `tests/e2e`.
 
-| Skript | Prüft |
+| Script | Checks |
 | --- | --- |
-| `e2e/run.mjs` | Grundbedienung, Demo, Fokus |
-| `e2e/run2.mjs` | A–Z-Übersicht mit über 5000 Titeln, Einstellungen |
-| `e2e/run3.mjs` | Verbindungsausfälle, eingebauter Player, HLS |
-| `e2e/run4.mjs` | mpv im echten Fensteraufbau |
-| `e2e/run5.mjs` | Einstellungen aus Fladder |
-| `e2e/matrix.mjs` | mpv mit echtem Audiogerät, jeweils mit kaltem Gerät |
-| `e2e/migrate.mjs` | Übernahme älterer Einstellungen beim ersten Start |
-| `e2e/builtin-cold.mjs` | eingebauter Player mit kaltem Audiogerät |
-| `tv/run.mjs` | webOS-Build in Electron 4 (Chromium 69) und 8 (Chromium 80) |
+| `e2e/run.mjs` | Basic controls, demo, focus |
+| `e2e/run2.mjs` | A–Z overview with more than 5000 titles, settings |
+| `e2e/run3.mjs` | Connection loss, built-in player, HLS |
+| `e2e/run4.mjs` | mpv in the real window setup |
+| `e2e/run5.mjs` | Settings inspired by Fladder |
+| `e2e/lang.mjs` | German from the system language, then switching to English |
+| `e2e/matrix.mjs` | mpv with the real audio device, each time with a cold device |
+| `e2e/migrate.mjs` | Taking over settings from an older app folder on the first start |
+| `e2e/builtin-cold.mjs` | Built-in player with a cold audio device |
+| `tv/run.mjs` | webOS build in Electron 4 (Chromium 69) and 8 (Chromium 80) |
 
-Aufruf, zum Beispiel:
+Example:
 
 ```bash
 node tests/e2e/run3.mjs . tests/e2e/hls tests/e2e/media/test.mkv
 ```
 
-Die Testmedien liegen nicht im Repository: `tests/e2e/hls/` braucht eine HLS-Wiedergabeliste (`index.m3u8` mit Segmenten), `tests/e2e/media/test.mkv` ein MKV mit H.264 und vier Tonspuren (AC3, E-AC3, TrueHD, DTS). `matrix.mjs` und `builtin-cold.mjs` nutzen das echte Audiogerät des Rechners.
+The test media are not in the repository: `tests/e2e/hls/` needs an HLS playlist (`index.m3u8` with segments), and `tests/e2e/media/test.mkv` an MKV with H.264 and four audio tracks (AC3, E-AC3, TrueHD, DTS). `matrix.mjs` and `builtin-cold.mjs` use the computer's real audio device.

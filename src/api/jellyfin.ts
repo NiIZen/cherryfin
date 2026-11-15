@@ -17,19 +17,20 @@ import type {
 } from './types';
 import { buildDeviceProfile, buildExternalPlayerProfile, buildWebOSProfile } from './profile';
 import { isTV } from '../tv/platform';
+import { t } from '../i18n';
 
 const CLIENT_NAME = 'Cherryfin';
-const CLIENT_VERSION = '0.6.2';
-/** Danach gilt eine Anfrage als gescheitert. Große Seiten dürfen dauern, hängen darf nichts ewig. */
+const CLIENT_VERSION = '0.7.0';
+/** After this a request counts as failed. Large pages may take a while, but nothing may hang forever. */
 const REQUEST_TIMEOUT_MS = 30_000;
-/** Antwortet der Server so lange nicht, wird nebenbei seine Erreichbarkeit geprüft. */
+/** If the server does not answer for this long, its reachability is checked on the side. */
 const SLOW_REQUEST_MS = 6_000;
 const PING_TIMEOUT_MS = 4_000;
 const TICKS_PER_SECOND = 10_000_000;
 
-/** Felder für Karten und Hero-Bereich. */
+/** Fields for cards and the hero area. */
 const LIST_FIELDS: ItemFields[] = ['Overview', 'Genres', 'DateCreated', 'PrimaryImageAspectRatio', 'SortName'];
-/** Felder für Detailseite und Player. */
+/** Fields for the detail page and the player. */
 const DETAIL_FIELDS: ItemFields[] = [...LIST_FIELDS, 'People', 'Studios', 'Taglines', 'MediaSources', 'MediaStreams', 'Trickplay', 'Chapters', 'ExternalUrls'];
 
 export interface Session {
@@ -61,7 +62,7 @@ export function authHeader(id: string, token?: string): string {
   return `MediaBrowser ${parts.join(', ')}`;
 }
 
-/** Baut die Adressen, die für eine Eingabe wie "nas", "nas:8096" oder "https://jf.example" in Frage kommen. */
+/** Builds the addresses that come into question for input such as "nas", "nas:8096" or "https://jf.example". */
 export function serverCandidates(input: string): string[] {
   const raw = input.trim().replace(/\/+$/, '');
   if (!raw) return [];
@@ -88,7 +89,7 @@ export function secondsToTicks(seconds: number): number {
   return Math.round(seconds * TICKS_PER_SECOND);
 }
 
-/** Wählt die Wiedergabeart aus der Antwort von /PlaybackInfo. */
+/** Picks the playback method from the /PlaybackInfo response. */
 export function chooseStream(
   serverUrl: string,
   token: string,
@@ -99,27 +100,27 @@ export function chooseStream(
 ): { url: string; isHls: boolean; method: PlaybackSession['method'] } {
   if (source.SupportsDirectPlay && !forceTranscode) {
     const query = buildQuery({ static: true, mediaSourceId: source.Id, api_key: token });
-    // Der Medienplayer des Fernsehers erkennt das Format an der Endung.
+    // The TV’s media player recognizes the format by the file extension.
     const extension = useExtension && source.Container ? `.${source.Container.split(',')[0]}` : '';
     return { url: `${serverUrl}/Videos/${itemId}/stream${extension}${query}`, isHls: false, method: 'DirectPlay' };
   }
   if (source.TranscodingUrl) {
     return { url: `${serverUrl}${source.TranscodingUrl}`, isHls: true, method: 'Transcode' };
   }
-  throw new Error('Der Server bietet für dieses Medium keinen abspielbaren Stream an.');
+  throw new Error(t('The server offers no playable stream for this media.'));
 }
 
 export async function probeServer(baseUrl: string): Promise<{ url: string; name: string; version: string }> {
   const response = await fetch(`${baseUrl}/System/Info/Public`, { signal: AbortSignal.timeout(4000) });
-  if (!response.ok) throw new ApiError(response.status, `Server antwortet mit ${response.status}`);
+  if (!response.ok) throw new ApiError(response.status, t('Server responds with {status}', { status: response.status }));
   const info = await response.json();
-  if (!info?.Id) throw new Error('Das ist kein Jellyfin-Server.');
+  if (!info?.Id) throw new Error(t('This is not a Jellyfin server.'));
   return { url: baseUrl, name: info.ServerName ?? 'Jellyfin', version: info.Version ?? '' };
 }
 
-/** Probiert alle Kandidaten nacheinander und gibt den ersten erreichbaren Server zurück. */
+/** Tries all candidates in turn and returns the first reachable server. */
 export async function findServer(input: string) {
-  let lastError: unknown = new Error('Bitte gib eine Serveradresse ein.');
+  let lastError: unknown = new Error(t('Please enter a server address.'));
   for (const candidate of serverCandidates(input)) {
     try {
       return await probeServer(candidate);
@@ -145,8 +146,8 @@ export async function signIn(serverUrl: string, serverName: string, username: st
     headers: { Authorization: authHeader(deviceId()), 'Content-Type': 'application/json' },
     body: JSON.stringify({ Username: username, Pw: password }),
   });
-  if (response.status === 401) throw new ApiError(401, 'Benutzername oder Passwort ist falsch.');
-  if (!response.ok) throw new ApiError(response.status, `Anmeldung fehlgeschlagen (${response.status}).`);
+  if (response.status === 401) throw new ApiError(401, t('Wrong username or password.'));
+  if (!response.ok) throw new ApiError(response.status, t('Sign-in failed ({status}).', { status: response.status }));
   const result = await response.json();
   return { serverUrl, serverName, token: result.AccessToken, user: result.User };
 }
@@ -165,7 +166,7 @@ export class JellyfinClient implements MediaClient {
   private readonly userId: string;
   private readonly device = deviceId();
   private readonly pending = new Set<AbortController>();
-  /** Wird bei einem abgelaufenen Token aufgerufen, damit die App zur Anmeldung zurückkehrt. */
+  /** Called on an expired token so the app returns to the sign-in. */
   onUnauthorized?: () => void;
   onConnectionIssue?: () => void;
   onConnectionOk?: () => void;
@@ -181,17 +182,17 @@ export class JellyfinClient implements MediaClient {
   private async request<T>(path: string, init: { method?: string; query?: Record<string, unknown>; body?: unknown; keepalive?: boolean } = {}): Promise<T> {
     const watchdog = setTimeout(() => this.onConnectionIssue?.(), SLOW_REQUEST_MS);
     const cancel = new AbortController();
-    // Nur Lesezugriffe lassen sich gefahrlos abbrechen. Meldungen an den Server sollen ankommen.
+    // Only reads can be cancelled safely. Reports to the server should arrive.
     if ((init.method ?? 'GET') === 'GET') this.pending.add(cancel);
     let response: Response;
     try {
       response = await fetch(`${this.serverUrl}${path}${buildQuery(init.query ?? {})}`, {
         method: init.method ?? 'GET',
-        // Ältere webOS-Engines verweigern keepalive zusammen mit dem Anmelde-Header. Die Meldung
-        // ginge dann verloren. Auf dem Fernseher läuft die App danach ohnehin weiter.
+        // Older webOS engines refuse keepalive together with the auth header; the report
+        // would get lost. On the TV the app keeps running afterwards anyway.
         keepalive: init.keepalive && !isTV,
-        // Der Browser-Cache würde gleiche URLs hintereinanderstellen: Eine neue Anfrage
-        // müsste auf eine hängende warten, auch wenn der Server längst wieder antwortet.
+        // The browser cache would queue identical URLs: a new request
+        // would wait for a hanging one, even when the server answers again.
         cache: 'no-store',
         signal: AbortSignal.any([cancel.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
         headers: {
@@ -201,9 +202,9 @@ export class JellyfinClient implements MediaClient {
         body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
       });
     } catch {
-      if (cancel.signal.aborted) throw new ApiError(0, 'Die Anfrage wurde abgebrochen.');
+      if (cancel.signal.aborted) throw new ApiError(0, t('The request was cancelled.'));
       this.onConnectionIssue?.();
-      throw new ApiError(0, 'Der Server ist nicht erreichbar.');
+      throw new ApiError(0, t('The server cannot be reached.'));
     } finally {
       clearTimeout(watchdog);
       this.pending.delete(cancel);
@@ -211,9 +212,9 @@ export class JellyfinClient implements MediaClient {
     this.onConnectionOk?.();
     if (response.status === 401) {
       this.onUnauthorized?.();
-      throw new ApiError(401, 'Die Anmeldung ist abgelaufen.');
+      throw new ApiError(401, t('The sign-in has expired.'));
     }
-    if (!response.ok) throw new ApiError(response.status, `Serverfehler ${response.status} bei ${path}`);
+    if (!response.ok) throw new ApiError(response.status, t('Server error {status} at {path}', { status: response.status, path }));
     if (response.status === 204) return undefined as T;
     const text = await response.text();
     return (text ? JSON.parse(text) : undefined) as T;
@@ -268,7 +269,7 @@ export class JellyfinClient implements MediaClient {
       query: { userId: this.userId, ids: id, fields: DETAIL_FIELDS, enableImageTypes: ['Primary', 'Backdrop', 'Logo', 'Thumb'] },
     });
     const item = result.Items?.[0];
-    if (!item) throw new ApiError(404, 'Dieser Eintrag wurde nicht gefunden.');
+    if (!item) throw new ApiError(404, t('This item was not found.'));
     return item;
   }
 
@@ -368,14 +369,14 @@ export class JellyfinClient implements MediaClient {
         EnableTranscoding: true,
         AllowVideoStreamCopy: true,
         AllowAudioStreamCopy: true,
-        // StartTimeTicks bleibt bewusst leer: Der Player setzt die Startposition selbst,
-        // damit die HLS-Zeitachse immer beim Filmanfang beginnt.
+        // StartTimeTicks stays empty on purpose: the player sets the start position itself,
+        // so the HLS timeline always begins at the start of the film.
       },
     });
-    if (info.ErrorCode) throw new Error(`Der Server lehnt die Wiedergabe ab (${info.ErrorCode}).`);
+    if (info.ErrorCode) throw new Error(t('The server refuses playback ({code}).', { code: String(info.ErrorCode) }));
     const sources = info.MediaSources ?? [];
     const source = sources.find((s) => s.Id === options.mediaSourceId) ?? sources[0];
-    if (!source) throw new Error('Für diesen Eintrag gibt es keine Mediendatei.');
+    if (!source) throw new Error(t('There is no media file for this item.'));
     return {
       ...chooseStream(this.serverUrl, this.token, itemId, source, Boolean(options.forceTranscode), isTV),
       source,
@@ -388,7 +389,7 @@ export class JellyfinClient implements MediaClient {
       const result = await this.request<{ Items?: Segment[] }>(`/MediaSegments/${itemId}`);
       return result.Items ?? [];
     } catch {
-      return []; // Vor Jellyfin 10.10 gibt es diesen Endpunkt nicht.
+      return []; // This endpoint does not exist before Jellyfin 10.10.
     }
   }
 
@@ -396,7 +397,7 @@ export class JellyfinClient implements MediaClient {
     const response = await fetch(`${this.serverUrl}/Videos/${itemId}/${source.Id}/Subtitles/${index}/0/Stream.vtt`, {
       headers: { Authorization: authHeader(this.device, this.token) },
     });
-    if (!response.ok) throw new ApiError(response.status, 'Untertitel konnten nicht geladen werden.');
+    if (!response.ok) throw new ApiError(response.status, t('Subtitles could not be loaded.'));
     return response.text();
   }
 

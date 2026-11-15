@@ -2,188 +2,192 @@
 
 ![Cherryfin](electron/icon.png)
 
-Jellyfin-Client für Windows und WebOS (LG) mit einer Oberfläche im Stil von tvOS und der Apple-TV-App.
-Unabhängiges Projekt ohne Verbindung zu Apple oder dem Jellyfin-Projekt.
+Jellyfin client for Windows and LG webOS with an interface in the style of tvOS and the Apple TV app.
+Independent project, not affiliated with Apple or the Jellyfin project.
 
-Die Programme wurden vollständig von Claude Code geschrieben.
+The apps were written entirely by Claude Code.
 
-## Bilder
+The interface is available in English and German. It follows the system language and can be changed under **Settings > Appearance > Language**.
 
-![Startseite mit Titelbereich und „Weiter ansehen“](docs/screenshots/startseite.webp)
+## Screenshots
 
-![Detailseite eines Films](docs/screenshots/details.webp)
+![Home screen with header and “Continue watching”](docs/screenshots/home.webp)
 
-![Einstellungen, Bereich Darstellung](docs/screenshots/einstellungen.webp)
+![Detail page of a movie](docs/screenshots/details.webp)
 
-## Herunterladen
+![Settings, Appearance section](docs/screenshots/settings.webp)
 
-Fertige Pakete stehen unter [Releases](../../releases/latest):
+## Download
 
-| Datei | Für |
+Ready-made packages are available under [Releases](../../releases/latest):
+
+| File | For |
 | --- | --- |
-| `Cherryfin.Setup.<Version>.exe` | Windows, mit Installation |
-| `Cherryfin-portable-<Version>.exe` | Windows, ohne Installation |
-| `org.cherryfin.webos_<Version>_all.ipk` | LG-Fernseher mit webOS 5 oder neuer, über den Developer Mode |
+| `Cherryfin.Setup.<version>.exe` | Windows, with installer |
+| `Cherryfin-portable-<version>.exe` | Windows, no installation |
+| `org.cherryfin.webos_<version>_all.ipk` | LG TVs with webOS 5 or newer, through Developer Mode |
 
-Die Windows-Pakete sind nicht signiert. Windows SmartScreen warnt deshalb beim ersten Start.
+The Windows packages are not signed, so Windows SmartScreen warns on the first start.
 
-## Starten
+## Getting started
 
-Dieser Abschnitt gilt nur, wenn du Cherryfin selbst aus dem Quellcode baust. Die fertigen Pakete unter [Releases](../../releases/latest) enthalten mpv bereits.
+This section only applies if you build Cherryfin from source yourself. The packages under [Releases](../../releases/latest) already include mpv.
 
-### Warum mpv?
+### Why mpv?
 
-[mpv](https://mpv.io/) ist ein freier Videoplayer, den Cherryfin unter Windows zum Abspielen nutzt. Der eingebaute Player von Electron (Chromium) kann viele Formate nicht selbst abspielen, die in Filmsammlungen üblich sind. Der Jellyfin-Server muss sie dann live umwandeln (transkodieren). Das kostet Rechenleistung auf dem Server und oft Bildqualität. mpv spielt dagegen praktisch alles direkt ab:
+[mpv](https://mpv.io/) is a free video player that Cherryfin uses for playback on Windows. Electron's built-in player (Chromium) cannot play many formats that are common in movie collections. The Jellyfin server then has to convert them live (transcode), which costs server power and often picture quality. mpv, on the other hand, plays practically everything directly:
 
-| | Mit mpv | Nur eingebauter Player |
+| | With mpv | Built-in player only |
 | --- | --- | --- |
-| MKV, HEVC (H.265), AV1 | direkt | meist Umwandlung durch den Server |
-| Ton in DTS, TrueHD, E-AC3 | direkt | Umwandlung durch den Server |
-| Passthrough an einen AV-Receiver (Dolby Atmos, DTS:X) | ja | nein |
-| Bilduntertitel (PGS, DVD) | direkt | vom Server ins Bild eingebrannt |
-| Tonspur wechseln | sofort | Server liefert den Film neu |
+| MKV, HEVC (H.265), AV1 | direct | mostly converted by the server |
+| Audio in DTS, TrueHD, E-AC3 | direct | converted by the server |
+| Passthrough to an AV receiver (Dolby Atmos, DTS:X) | yes | no |
+| Image subtitles (PGS, DVD) | direct | burned into the picture by the server |
+| Switching audio tracks | instant | server delivers the title again |
 
-Ohne mpv läuft Cherryfin trotzdem, dann mit dem eingebauten Player. Unter **Einstellungen > Wiedergabe** lässt sich jederzeit zwischen beiden wechseln. Auf dem Fernseher (webOS) spielt immer der Medienplayer des Fernsehers ab, mpv wird dort nicht gebraucht.
+Cherryfin still works without mpv, using the built-in player. You can switch between the two at any time under **Settings > Playback**. On the TV (webOS), the TV's own media player always plays, so mpv is not needed there.
 
-### mpv einrichten
+### Setting up mpv
 
-`mpv.exe` liegt nicht im Repository, weil die Datei mit über 100 MB für GitHub zu groß ist. Vor dem ersten Start den Build [mpv-x86_64-20261105-git-3138fc8eea](https://github.com/zhongfly/mpv-winbuild/releases) von zhongfly/mpv-winbuild herunterladen und `mpv.exe` nach `vendor/mpv/` legen. Cherryfin wurde mit genau diesem Build getestet.
+`mpv.exe` is not in the repository, because at over 100 MB it is too large for GitHub. Before the first start, download the build [mpv-x86_64-20261105-git-3138fc8eea](https://github.com/zhongfly/mpv-winbuild/releases) from zhongfly/mpv-winbuild and put `mpv.exe` into `vendor/mpv/`. Cherryfin was tested with exactly this build.
 
-### Bauen und starten
+### Build and run
 
 ```bash
 npm install
 npm start
 ```
 
-Beim ersten Start sucht die App im Netzwerk nach Jellyfin-Servern. Ohne Server lässt sich alles über **Demo ansehen** ausprobieren.
+On the first start the app searches the network for Jellyfin servers. Without a server, everything can be tried out with **Try the demo**.
 
-## Befehle
+## Commands
 
-| Befehl | Zweck |
+| Command | Purpose |
 | --- | --- |
-| `npm start` | Bauen und in Electron starten |
-| `npm run dev` | Entwicklung mit Hot Reload in Electron |
-| `npm run web` | Nur die Oberfläche im Browser, Demo unter `http://localhost:5173/?demo=1` |
-| `npm test` | Unit-Tests |
-| `npm run dist` | Installer und portable `.exe` in `release/<version>/` erstellen |
+| `npm start` | Build and start in Electron |
+| `npm run dev` | Development with hot reload in Electron |
+| `npm run web` | Interface only, in the browser; demo at `http://localhost:5173/?demo=1` |
+| `npm test` | Unit tests |
+| `npm run dist` | Build the installer and portable `.exe` in `release/<version>/` |
 
-## Bedienung
+The window tests are described in [tests/README.md](tests/README.md).
 
-| Eingabe | Tastatur | Gamepad |
+## Controls
+
+| Input | Keyboard | Gamepad |
 | --- | --- | --- |
-| Navigieren | Pfeiltasten | Steuerkreuz, linker Stick |
-| Auswählen | Enter | A |
-| Zurück | Esc, Rücktaste | B |
-| Wiedergabe/Pause | Leertaste | Start |
-| Im Player springen | Pfeil links/rechts (10 s) | Steuerkreuz links/rechts |
-| Vollbild | F, F11 | |
+| Navigate | Arrow keys | D-pad, left stick |
+| Select | Enter | A |
+| Back | Esc, Backspace | B |
+| Play/pause | Space | Start |
+| Skip in the player | Arrow left/right (10 s) | D-pad left/right |
+| Full screen | F, F11 | |
 
-Mit der Maus folgt der Fokus dem Zeiger, die Karten kippen mit. Der Zurück-Knopf oben links erscheint nur im Mausbetrieb.
+With the mouse, the focus follows the pointer and the cards tilt along. The back button at the top left only appears when using the mouse.
 
-## Übersicht und Anpassung
+## Overview and customization
 
-Jede Video-Bibliothek des Servers ist ein eigener Bereich in der Leiste oben. Gibt es keine Bibliothek für Dokumentationen, entsteht der Bereich aus den passenden Genres, falls vorhanden. Ein Bereich zeigt standardmäßig alle Titel von A bis Z, mit Abschnitten und einer A–Z-Leiste zum Springen.
+Every video library on the server becomes its own section in the top bar. If there is no library for documentaries, the section is built from matching genres, if any. By default a section shows all titles from A to Z, with sections and an A–Z bar for jumping.
 
-Einstellbar ist fast alles, unter **Einstellungen** und über den Knopf **Ansicht** in jedem Bereich:
+Almost everything can be adjusted, under **Settings** and with the **View** button in each section:
 
-| Kategorie | Optionen |
+| Category | Options |
 | --- | --- |
-| Darstellung | Akzentfarbe, Hintergrund, Größe der Oberfläche, Schrift, Ecken, Glaseffekt, Animationen, Sparmodus, Hintergrund der Detailseite, Kartengröße, Titel unter Karten, Fokus-Zoom, Neigen und Glanz, Fokusrahmen, Fortschrittsbalken, Haken bei Gesehenem, Spoiler-Schutz |
-| Startseite | Titelbereich (wechselnd, feststehend, aus), Wechselzeit, Inhalt, Beschreibung, Kartenformat, Weiter ansehen (zusammen, getrennt, nur eines von beiden), Zeitraum für nächste Folgen, Reihen ein-/ausblenden und umsortieren |
-| Bereiche | Ein-/ausblenden, umsortieren, Übersicht oder Reihen, Bibliotheken zusammenlegen |
-| Mediathek | Standard für alle Bereiche: Raster oder Liste, Hoch- oder Querformat, Größe, Titel, Sortierung, Reihenfolge, Abschnitte, A–Z-Leiste, Titelbild, nur Ungesehenes |
-| Wiedergabe | Qualität getrennt für Heimnetz und Internet, nächste Folge automatisch, Player im Vollbild, Sprunglängen, Tonsprache und Untertitelsprache merken, Inkognito, Bildschirmschoner, Bildanpassung, Hardware-Dekodierung, Puffer, Verhalten je Abschnitt (Intro, Rückblick, Werbung, Vorschau, Abspann), Tempo beim Halten der Maustaste, Doppelklick, Medientasten, Lautstärke beim Start und alles zum Ton |
-| Untertitel | Größe, Fett, Farbe, Rand, Hintergrund, Abstand vom unteren Rand |
-| Tastenkürzel | Eigene Tasten im Player für Ton aus, Lautstärke, Tempo, Untertitel, nächste Folge und Segment überspringen (nicht auf dem Fernseher) |
+| Appearance | Language, accent color, background, interface size, font, corners, glass effect, animations, power saving, detail page background, card size, titles below cards, focus zoom, tilt and shine, focus ring, progress bars, checkmark on watched, spoiler protection |
+| Home | Header (rotating, fixed, off), rotation time, content, description, card format, continue watching (together, separate, only one of them), time range for next up, show/hide and reorder rows |
+| Sections | Show/hide, reorder, overview or rows, merge libraries |
+| Library | Default for all sections: grid or list, portrait or landscape, size, titles, sort order, direction, sections, A–Z bar, header image, unwatched only |
+| Playback | Quality for home network and internet separately, next episode automatically, player in full screen, skip lengths, remember audio and subtitle language, incognito, screensaver, picture fit, hardware decoding, buffer, behavior per segment (intro, recap, commercials, preview, credits), speed while holding the mouse button, double-click, media keys, volume at start and all audio settings |
+| Subtitles | Size, bold, color, outline, background, distance from the bottom |
+| Keyboard shortcuts | Custom keys in the player for mute, volume, speed, subtitles, next episode and skip segment (not on the TV) |
 
-Anpassungen über den Knopf **Ansicht** gelten nur für den jeweiligen Bereich und haben Vorrang vor dem Standard. Alle Einstellungen liegen lokal auf diesem Rechner und werden nicht mit dem Server abgeglichen.
+Adjustments made with the **View** button only apply to that section and take priority over the default. All settings are stored locally on this computer and are not synced with the server.
 
-## Wiedergabe mit dem eingebauten Player
+## Playback with the built-in player
 
-Die App schickt dem Server ein Geräteprofil. Der Server entscheidet damit:
+The app sends the server a device profile. The server uses it to decide:
 
-- **Direct Play** für MP4, MOV und WebM mit Codecs, die Chromium beherrscht. HEVC und AV1 werden nur gemeldet, wenn das Gerät sie laut `canPlayType` abspielen kann.
-- **HLS** für alles andere, etwa MKV: Wenn möglich wird nur umverpackt, sonst transkodiert.
-- Schlägt Direct Play trotzdem fehl, wechselt der Player automatisch zu HLS.
-- Andere Tonspuren laufen immer über HLS, weil Chromium die Spur im Direct Play nicht umschalten kann. Das kann den Server stärker belasten.
-- Textuntertitel kommen als WebVTT, Bilduntertitel (PGS, DVD) brennt der Server ein.
+- **Direct play** for MP4, MOV and WebM with codecs that Chromium supports. HEVC and AV1 are only reported if the device can play them according to `canPlayType`.
+- **HLS** for everything else, such as MKV: repackaged only if possible, otherwise transcoded.
+- If direct play still fails, the player switches to HLS automatically.
+- Other audio tracks always go through HLS, because Chromium cannot switch tracks in direct play. This can put more load on the server.
+- Text subtitles arrive as WebVTT; the server burns in image subtitles (PGS, DVD).
 
-Unterstützt werden außerdem Trickplay-Vorschauen, „Intro überspringen“ über Media Segments (ab Jellyfin 10.10) und automatisch die nächste Folge.
+Trickplay previews, “Skip intro” through media segments (from Jellyfin 10.10) and automatic next episodes are supported as well.
 
-## Aufbau
+## Structure
 
 ```text
-electron/        Hauptprozess, Preload, Server-Suche, verschlüsselte Anmeldedaten
-src/api/         Jellyfin-Client, Geräteprofil, Demo-Daten
-src/focus/       Fokus-Navigation für Tastatur, Maus und Gamepad
-src/ui/          Karten, Reihen, Hero, Icons
-src/screens/     Anmeldung, Startseite, Mediathek, Details, Suche, Player
-src/styles.css   Designsystem
+electron/        Main process, preload, server discovery, encrypted credentials
+src/api/         Jellyfin client, device profile, demo data
+src/focus/       Focus navigation for keyboard, mouse and gamepad
+src/i18n/        Translations (English source texts, German in de.ts)
+src/ui/          Cards, rows, hero, icons
+src/screens/     Sign-in, home, library, details, search, player
+src/styles.css   Design system
 ```
 
-Das Zugriffstoken liegt über Electron `safeStorage` (Windows DPAPI) verschlüsselt im Benutzerprofil. Das Passwort wird nicht gespeichert.
+The access token is stored encrypted in the user profile through Electron `safeStorage` (Windows DPAPI). The password is not stored.
 
 ## LG webOS
 
-Der Fernseher bekommt einen eigenen Build ohne Electron und mpv:
+The TV gets its own build without Electron and mpv:
 
 ```bash
 npm run package:webos
 ```
 
-Das erzeugt in `release/webos/` das IPK-Paket, das Manifest für den Homebrew Channel und das Icon. Mit `--source` und `--icon` trägt das Skript die öffentlichen Adressen ins Manifest ein:
+This creates the IPK package, the Homebrew Channel manifest and the icon in `release/webos/`. With `--source` and `--icon`, the script writes the public addresses into the manifest:
 
 ```bash
 node scripts/package-webos.mjs --source https://github.com/NiIZen/cherryfin --icon https://github.com/NiIZen/cherryfin/releases/latest/download/icon160.png
 ```
 
-Mindestens nötig ist webOS 5 (Modelle ab 2020, Chromium 68). Unterschiede zur Windows-App:
+webOS 5 is the minimum (models from 2020, Chromium 68). Differences from the Windows app:
 
-- Der Medienplayer des Fernsehers spielt ab, inklusive MKV, HEVC und Dolby. DTS lässt sich einschalten, falls das Modell es kann. Sonst wandelt der Server den Ton um.
-- Passthrough an einen Receiver stellt man in den Toneinstellungen des Fernsehers ein (HDMI ARC oder eARC).
-- Texteingaben laufen über eine Bildschirmtastatur. Den Server sucht die App nicht selbst, die Adresse wird einmal eingegeben.
-- Das Zugriffstoken liegt unverschlüsselt im Speicher dieser App, weil der Fernseher keinen verschlüsselten Speicher bietet.
-- Der Glaseffekt ist wegen der Rechenleistung standardmäßig aus.
+- The TV's media player plays the files, including MKV, HEVC and Dolby. DTS can be turned on if the model supports it; otherwise the server converts the audio.
+- Passthrough to a receiver is set up in the TV's sound settings (HDMI ARC or eARC).
+- Text input uses an on-screen keyboard. The app does not search for the server itself; the address is entered once.
+- The access token is stored unencrypted in this app's storage, because the TV offers no encrypted storage.
+- The glass effect is off by default for performance. The top bar stays translucent anyway; only power saving makes it opaque.
 
-Die Vorlage für den Eintrag im Homebrew Channel liegt unter `webos/homebrew-package.yml`. Die Regeln stehen in [webosbrew/apps-repo](https://github.com/webosbrew/apps-repo): Eine KI-gestützte Entwicklung muss im Pull Request offengelegt werden, und ein Mensch muss die App getestet und geprüft haben.
+The template for the Homebrew Channel entry is in `webos/homebrew-package.yml`. The rules are in [webosbrew/apps-repo](https://github.com/webosbrew/apps-repo): AI-assisted development must be disclosed in the pull request, and a human must have tested and reviewed the app.
 
-## Verbindungsausfälle
+## Connection loss
 
-Antwortet der Server nicht mehr, erscheint statt einer leeren Seite ein Hinweis mit **Neu laden**. Die App prüft im Hintergrund weiter und lädt von selbst neu, sobald der Server zurück ist. Die Anmeldung und die Position in der App bleiben dabei erhalten. Ein laufender Film wird nicht unterbrochen, solange noch Video im Puffer ist; bricht die Wiedergabe ab, bietet der Player dort **Neu laden** an. F5 oder Strg+R laden jederzeit neu.
+If the server stops responding, a message with **Reload** appears instead of an empty page. The app keeps checking in the background and reloads by itself once the server is back. The sign-in and the position in the app are kept. A running title is not interrupted as long as video is still buffered; if playback stops, the player offers **Reload** there. F5 or Ctrl+R reload at any time.
 
-## Player und Ton
+## Player and audio
 
-Standardmäßig spielt [mpv](https://mpv.io/) die Filme ab. Es liegt der App bei und liest praktisch jedes Format direkt, auch MKV, DTS und TrueHD. Der Server muss nur noch umwandeln, wenn die Bitrate über dem eingestellten Limit liegt. Untertitel aus der Datei liest mpv selbst, auch PGS und DVD, ohne Einbrennen.
+By default [mpv](https://mpv.io/) plays the titles. It ships with the app and reads practically every format directly, including MKV, DTS and TrueHD. The server only has to convert when the bitrate is above the configured limit. mpv reads subtitles from the file itself, including PGS and DVD, without burning them in.
 
-Unter **Einstellungen > Wiedergabe** lässt sich auf den eingebauten Player umstellen. Der Demo-Modus nutzt immer den eingebauten Player.
+The built-in player can be selected under **Settings > Playback**. Demo mode always uses the built-in player.
 
-| Einstellung | Wirkung |
+| Setting | Effect |
 | --- | --- |
-| Ausgabegerät | Wählt das Windows-Audiogerät, zum Beispiel den Receiver. Windows zeigt ihn meist nur an, solange er eingeschaltet ist. |
-| Passthrough | Der Ton geht unverändert an den Receiver, einzeln schaltbar für AC3, E-AC3, TrueHD, DTS und DTS-HD. Nötig für Atmos und DTS:X. |
-| Passthrough aus | mpv dekodiert selbst und sendet unkomprimierten Mehrkanalton. Verlustfrei, aber ohne Atmos- und DTS:X-Objekte. |
-| Exklusiver Audiomodus | mpv belegt das Gerät allein. Für TrueHD und DTS-HD nötig. Andere Windows-Töne sind dabei stumm. |
+| Output device | Chooses the Windows audio device, for example the receiver. Windows usually only lists it while it is switched on. |
+| Passthrough | Audio goes to the receiver unchanged, switchable per format for AC3, E-AC3, TrueHD, DTS and DTS-HD. Needed for Atmos and DTS:X. |
+| Passthrough off | mpv decodes itself and sends uncompressed multichannel audio. Lossless, but without Atmos and DTS:X objects. |
+| Exclusive audio mode | mpv uses the device alone. Needed for TrueHD and DTS-HD. Other Windows sounds are muted meanwhile. |
 
-Was gerade ausgegeben wird, steht im Player im Tonspur-Menü, etwa `Passthrough: Dolby TrueHD` oder `PCM: 7.1`. Entscheidend ist am Ende die Anzeige des Receivers.
+The audio menu in the player shows what is currently output, for example `Passthrough: Dolby TrueHD` or `PCM: 7.1`. In the end, the receiver's display is what counts.
 
-Manche Audiotreiber (nachgewiesen mit Intel Smart Sound) lassen die Abspieluhr des ersten Tonstroms nicht anlaufen, wenn das Gerät einige Sekunden nichts ausgegeben hat. Das Bild bleibt dann auf dem ersten Einzelbild stehen, bei mpv und beim eingebauten Player. Vor jedem Laden öffnet und schließt die App das Gerät deshalb 0,6 Sekunden lang mit Stille. Bleibt die Zeit mit mpv trotzdem stehen, startet sie die Audioausgabe neu und nutzt zuletzt den exklusiven Modus. Nimmt das Gerät ein Format nicht per Passthrough an, läuft der Film mit PCM, und der Player sagt das an.
+Some audio drivers (proven with Intel Smart Sound) do not start the playback clock of the first audio stream when the device has been silent for a few seconds. The picture then stays on the first frame, with mpv as well as with the built-in player. So before every load, the app opens and closes the device with silence for 0.6 seconds. If the time still stands still with mpv, it restarts the audio output and finally uses exclusive mode. If the device does not accept a format via passthrough, the title plays with PCM and the player says so.
 
-Technik: mpv rendert in ein eigenes natives Fenster, darüber liegt ein transparentes Fenster mit der Bedienung. Das Hauptfenster ist währenddessen ausgeblendet. `vendor/mpv` enthält den Build [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild) (`mpv-x86_64-20261105-git-3138fc8eea`). mpv steht unter GPL/LGPL; das ist zu beachten, bevor die App an andere weitergegeben wird.
+Technically, mpv renders into its own native window, with a transparent window holding the controls on top. The main window is hidden meanwhile. `vendor/mpv` contains the build [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild) (`mpv-x86_64-20261105-git-3138fc8eea`).
 
-## Grenzen
+## Limitations
 
-- Musik, Fotos, Bücher und Live-TV sind nicht eingebunden.
-- Die Einstellungen sind am Quellcode von Fladder ausgerichtet. Nicht übernommen sind Downloads, Touch-Gesten, Bild-im-Bild, Seerr und ein Versatz für Untertitel.
-- In der Fensteransicht lässt sich der Player verschieben, aber nicht in der Größe ändern. Vollbild schaltet F.
-- HDR und Dolby Vision hängen von Windows, Grafikkarte und Bildschirm ab und sind nicht getestet.
-- ASS/SSA-Untertitel werden zu WebVTT gewandelt und verlieren dabei ihre Formatierung.
-- Die Schrift ist Inter. SF Pro wird nur genutzt, wenn sie lokal installiert ist, und wird nicht mitgeliefert.
+- Music, photos, books and live TV are not included.
+- The settings are modeled on the source code of Fladder. Downloads, touch gestures, picture-in-picture, Seerr and a subtitle offset were not adopted.
+- In windowed mode the player can be moved but not resized. F toggles full screen.
+- HDR and Dolby Vision depend on Windows, the graphics card and the display, and are not tested.
+- ASS/SSA subtitles are converted to WebVTT and lose their formatting in the built-in player.
+- The font is Inter. SF Pro is only used if it is installed locally; it is not included.
+- Switching the language reloads the app once. In demo mode this ends the demo.
 
-## Lizenz
+## License
 
-Cherryfin steht unter der [GNU General Public License 3.0](LICENSE). Die Windows-Pakete enthalten [mpv](https://mpv.io/) (GPL-2.0 oder neuer); der Quellcode des enthaltenen Builds liegt bei [mpv-player/mpv](https://github.com/mpv-player/mpv) unter Commit `3138fc8eea`, das Build-Skript bei [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild).
+Cherryfin is licensed under the [GNU General Public License 3.0](LICENSE). The Windows packages include [mpv](https://mpv.io/) (GPL-2.0 or later); the source code of the included build is at [mpv-player/mpv](https://github.com/mpv-player/mpv) at commit `3138fc8eea`, and the build script at [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild).
 
-Jellyfin ist ein Projekt der Jellyfin-Community. Cherryfin ist ein unabhängiger Client und nicht mit ihr verbunden.
-
-Cherryfin wurde mit Unterstützung der KI Claude von Anthropic entwickelt.
+Jellyfin is a project of the Jellyfin community. Cherryfin is an independent client and not affiliated with it.

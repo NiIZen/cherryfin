@@ -7,7 +7,7 @@ const FOCUSABLE = '[data-focusable]';
 const interceptors: Interceptor[] = [];
 const groupMemory = new WeakMap<Element, HTMLElement>();
 
-/** Der zuletzt registrierte Interceptor bekommt jedes Kommando zuerst. */
+/** The most recently registered interceptor gets every command first. */
 export function pushInterceptor(fn: Interceptor): () => void {
   interceptors.push(fn);
   return () => {
@@ -41,7 +41,7 @@ export function focusElement(el: HTMLElement, reveal = true) {
   if (reveal) revealElement(el);
 }
 
-/** Fokussiert data-autofocus oder das erste fokussierbare Element im Container. */
+/** Focuses data-autofocus or the first focusable element in the container. */
 export function focusFirstIn(container: ParentNode, reveal = false): boolean {
   const list = [...container.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(isVisible);
   const target = list.find((el) => el.hasAttribute('data-autofocus')) ?? list[0];
@@ -51,15 +51,15 @@ export function focusFirstIn(container: ParentNode, reveal = false): boolean {
 }
 
 /**
- * Wie focusFirstIn, versucht es aber erneut, solange noch nichts fokussierbar ist
- * (z. B. kurz nach dem Start, wenn das Fenster noch nicht angezeigt wird).
- * Gibt eine Funktion zum Abbrechen zurück.
+ * Like focusFirstIn, but retries while nothing is focusable yet
+ * (e.g. right after start, before the window is shown).
+ * Returns a function that cancels it.
  */
 export function focusWhenReady(container: ParentNode): () => void {
   let tries = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const attempt = () => {
-    // Hat inzwischen jemand anderes den Fokus gesetzt, bleibt er dort.
+    // If someone else has set the focus meanwhile, it stays there.
     const active = document.activeElement;
     if (active && active !== document.body && container.contains(active)) return;
     const scope = activeScope();
@@ -74,7 +74,7 @@ export function focusWhenReady(container: ParentNode): () => void {
 function bump(el: HTMLElement, dir: Dir) {
   const className = `bump-${dir}`;
   el.classList.remove(className);
-  void el.offsetWidth; // Startet die Animation bei wiederholtem Anstoßen neu.
+  void el.offsetWidth; // Restarts the animation on repeated bumps.
   el.classList.add(className);
   setTimeout(() => el.classList.remove(className), 260);
 }
@@ -89,7 +89,7 @@ function move(dir: Dir) {
   }
 
   const others = list.filter((el) => el !== current);
-  // Elemente wie die feste Tab-Leiste sind nur Ausweichziel, sonst überspringen sie die Reihen darüber.
+  // Elements like the fixed tab bar are only a fallback target; otherwise they would skip the rows above.
   const regular = others.filter((el) => !el.hasAttribute('data-focus-fallback'));
   const from = current.getBoundingClientRect() as Box;
 
@@ -108,7 +108,7 @@ function move(dir: Dir) {
     return;
   }
 
-  // Beim Wechsel in eine andere Reihe landet man dort, wo man sie zuletzt verlassen hat.
+  // When moving into another row, you land where you last left it.
   const nextGroup = next.closest('[data-focus-group]');
   if (nextGroup && nextGroup !== current.closest('[data-focus-group]') && (dir === 'up' || dir === 'down')) {
     const remembered = groupMemory.get(nextGroup);
@@ -119,7 +119,7 @@ function move(dir: Dir) {
 
 let rootBack: (() => void) | null = null;
 
-/** Was passiert, wenn "Zurück" nirgends mehr gebraucht wird: Auf dem Fernseher schließt das die App. */
+/** What happens when "Back" is not needed anywhere: on the TV this closes the app. */
 export function setRootBack(handler: (() => void) | null) {
   rootBack = handler;
 }
@@ -142,7 +142,7 @@ export function dispatchCommand(command: Command) {
   }
 }
 
-/* ---------- Sanftes Scrollen, das auch schnelle Tastenwiederholung mitgeht ---------- */
+/* ---------- Smooth scrolling that keeps up with fast key repeat ---------- */
 
 interface Animation {
   top: number;
@@ -223,7 +223,7 @@ export function revealElement(el: HTMLElement) {
   }
 }
 
-/* ---------- Eingabe: Tastatur, Maus und Gamepad ---------- */
+/* ---------- Input: keyboard, mouse and gamepad ---------- */
 
 export function setInputMode(mode: 'keyboard' | 'mouse') {
   if (document.documentElement.dataset.input !== mode) document.documentElement.dataset.input = mode;
@@ -244,7 +244,7 @@ const KEY_COMMANDS: Record<string, Command> = {
   GoBack: 'back',
 };
 
-/** Die Tasten der webOS-Fernbedienung melden je nach Modell nur einen Tastencode. */
+/** Depending on the model, the webOS remote keys only report a key code. */
 const KEYCODE_COMMANDS: Record<number, Command> = {
   37: 'left',
   38: 'up',
@@ -287,8 +287,8 @@ function keyHandler(event: KeyboardEvent) {
 let lastPointer = { x: -1, y: -1 };
 
 function pointerHandler(event: PointerEvent) {
-  // Chromium meldet auch nach Scrollen und Layoutänderungen eine Mausbewegung, obwohl die Maus
-  // stillsteht. Das darf den Fokus nicht verschieben, sonst springt er beim Navigieren per Taste.
+  // Chromium also reports a mouse move after scrolling and layout changes, although the mouse
+  // stands still. That must not move the focus, or it would jump while navigating by key.
   const moved = Math.abs(event.screenX - lastPointer.x) + Math.abs(event.screenY - lastPointer.y);
   if (moved < 2) return;
   lastPointer = { x: event.screenX, y: event.screenY };
@@ -307,10 +307,10 @@ function mouseButtonHandler(event: MouseEvent) {
   }
 }
 
-/** Ältere Engines liefern eine GamepadList ohne Array-Methoden. */
+/** Older engines return a GamepadList without array methods. */
 const connectedPads = () => Array.from(navigator.getGamepads?.() ?? []);
 
-/** Standard-Mapping: A wählt aus, B geht zurück, Start ist Play/Pause, Steuerkreuz und linker Stick navigieren. */
+/** Standard mapping: A selects, B goes back, Start is play/pause, D-pad and left stick navigate. */
 function startGamepadLoop(): () => void {
   const buttons: Array<[number, Command]> = [[0, 'select'], [1, 'back'], [9, 'playpause'], [12, 'up'], [13, 'down'], [14, 'left'], [15, 'right']];
   const pressedAt = new Map<Command, number>();

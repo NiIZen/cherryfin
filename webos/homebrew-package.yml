@@ -1,5 +1,5 @@
-# Vorlage für packages/org.cherryfin.webos.yml in webosbrew/apps-repo.
-# Vor dem Einreichen NAME und REPO ersetzen, Screenshots ergänzen und auf einem echten Fernseher testen.
+# Template for packages/org.cherryfin.webos.yml in webosbrew/apps-repo.
+# Before submitting, add screenshots and test on a real TV.
 title: Cherryfin
 iconUri: https://github.com/NiIZen/cherryfin/releases/latest/download/icon160.png
 manifestUrl: https://github.com/NiIZen/cherryfin/releases/latest/download/org.cherryfin.webos.manifest.json
@@ -7,17 +7,18 @@ category: multimedia
 pool: main
 requirements:
   webosRelease: "5.0"
-shortDescription: Jellyfin-Client mit einer Oberfläche im Stil von tvOS
+shortDescription: Jellyfin client with an interface in the style of tvOS
 description: |
-  Cherryfin ist ein inoffizieller Client für den eigenen Jellyfin-Server, mit einer ruhigen
-  Oberfläche im Stil von tvOS und voller Bedienung per Fernbedienung.
+  Cherryfin is an unofficial client for your own Jellyfin server, with a calm interface
+  in the style of tvOS and full control with the remote.
 
-  - Bibliotheken als eigene Bereiche mit A–Z-Übersicht und Buchstaben-Leiste
-  - Serien, Filme, Suche, Merkliste und "Weiter ansehen"
-  - Direktes Abspielen über den Medienplayer des Fernsehers, Umwandlung durch den Server nur bei Bedarf
-  - Anpassbare Darstellung: Farben, Größen, Raster oder Liste, Reihen und Bereiche
+  - Libraries as sections of their own, with an A–Z overview and a letter bar
+  - Shows, movies, search, my list and "Continue watching"
+  - Direct playback through the TV's media player; the server only converts when needed
+  - Customizable look: colors, sizes, grid or list, rows and sections
+  - English and German interface
 
-  Ein eigener Jellyfin-Server ist nötig. Ohne Server zeigt ein Demo-Modus die Oberfläche.
-  Keine Verbindung zu Apple oder dem Jellyfin-Projekt.
+  A Jellyfin server of your own is required. Without a server, a demo mode shows the interface.
+  Not affiliated with Apple or the Jellyfin project.
 
-  Bei der Entwicklung wurde KI-Unterstützung (Claude) eingesetzt.
+  AI assistance (Claude) was used in development.

@@ -8,9 +8,9 @@ export interface Box {
 }
 
 /**
- * Bewertet einen möglichen Fokuswechsel, kleiner ist besser. null heißt: nicht erreichbar.
- * Seitwärts bleibt der Fokus in der eigenen Zeile. Er springt also am Reihenende nicht in
- * eine andere Reihe, sondern löst dort den kleinen "Anstoßen"-Effekt aus.
+ * Scores a possible focus move; smaller is better. null means unreachable.
+ * Sideways, the focus stays in its own line. At the end of a row it does not jump into
+ * another row but triggers the small "bump" effect.
  */
 export function scoreMove(from: Box, to: Box, dir: Dir): number | null {
   const fromX = (from.left + from.right) / 2;
@@ -35,7 +35,7 @@ export function scoreMove(from: Box, to: Box, dir: Dir): number | null {
   return Math.max(gap, 0) * 2 + sideways * 2 + Math.abs(toX - fromX) * 0.25;
 }
 
-/** Index des besten Kandidaten oder -1. */
+/** Index of the best candidate, or -1. */
 export function pickBest(from: Box, boxes: Box[], dir: Dir): number {
   let best = -1;
   let bestScore = Infinity;
@@ -49,7 +49,7 @@ export function pickBest(from: Box, boxes: Box[], dir: Dir): number {
   return best;
 }
 
-/** Scrollziel, damit ein Element mit etwas Vorschau auf das nächste vollständig sichtbar ist. */
+/** Scroll target so an element is fully visible with a peek at the next one. */
 export function revealOffset(current: number, viewSize: number, start: number, end: number, padding: number, peek: number, maxScroll: number): number {
   let target = current;
   if (start - padding < current) target = start - padding;

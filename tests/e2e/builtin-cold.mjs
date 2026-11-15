@@ -1,4 +1,4 @@
-// Läuft der eingebaute Player bei kaltem Audiogerät an? Das Video hat echten Ton über das echte Gerät.
+// Does the built-in player start on a cold audio device? The video has real audio on the real device.
 import { _electron as electron } from 'playwright-core';
 import path from 'node:path';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -10,7 +10,7 @@ const mock = await startMockServer({ videoFile: path.join(project, 'public/demo/
 const userData = mkdtempSync(path.join(os.tmpdir(), 'jellytv-bc-'));
 const app = await electron.launch({
   executablePath: path.join(project, 'node_modules/electron/dist/electron.exe'),
-  args: [project, `--user-data-dir=${userData}`],
+  args: [project, '--lang=en-US', `--user-data-dir=${userData}`],
   cwd: project,
 });
 const page = await app.firstWindow();
@@ -29,10 +29,10 @@ await page.evaluate(() => {
 await page.waitForTimeout(800);
 await page.waitForSelector('.tabbar');
 await page.waitForTimeout(700);
-await page.click('.tabbar [aria-label="Filme"]');
-await page.waitForSelector('[data-tab-page="lib1"] .card[aria-label="Direkter Film"]');
+await page.click('.tabbar [aria-label=\"Movies\"]');
+await page.waitForSelector('[data-tab-page=\"lib1\"] .card[aria-label=\"Direct Movie\"]');
 await page.waitForTimeout(300);
-await page.click('[data-tab-page="lib1"] .card[aria-label="Direkter Film"]');
+await page.click('[data-tab-page=\"lib1\"] .card[aria-label=\"Direct Movie\"]');
 await page.waitForSelector('.route:not([hidden]) .btn-play');
 await page.waitForTimeout(9000);
 await page.click('.route:not([hidden]) .btn-play');

@@ -1,4 +1,5 @@
 import type { Session } from '../api/jellyfin';
+import { resolveLanguage, setLanguage } from '../i18n';
 import { mergeSettings, type Settings } from './settings';
 import { isTV } from '../tv/platform';
 
@@ -46,9 +47,9 @@ declare global {
 
 const DEV_KEY = 'jellytv.dev-session';
 
-/** Der Fernseher hat keinen verschlüsselten Speicher. localStorage gehört dort allein dieser App. */
+/** The TV has no encrypted storage. There, localStorage belongs to this app alone. */
 const plainStore = () => (isTV ? localStorage : sessionStorage);
-// Die Schlüssel stammen noch aus der Zeit als JellyTV und bleiben, damit Einstellungen erhalten bleiben.
+// The keys keep their original names so existing settings are preserved.
 const SETTINGS_KEY = 'jellytv.settings';
 
 export async function loadSession(): Promise<Session | null> {
@@ -65,7 +66,7 @@ export async function saveSession(session: Session | null): Promise<void> {
   if (window.native) {
     await window.native.secureSet(raw);
   } else if (raw) {
-    // Reiner Browserbetrieb (Entwicklung): Das Token überlebt nur diesen Tab.
+    // Plain browser (development): the token only survives this tab.
     plainStore().setItem(DEV_KEY, raw);
   } else {
     plainStore().removeItem(DEV_KEY);
@@ -76,11 +77,14 @@ export function loadSettings(): Settings {
   try {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}');
     const settings = mergeSettings(stored);
-    // Der Glaseffekt kostet auf Fernsehern viel Rechenleistung. Wer ihn möchte, kann ihn einschalten.
+    setLanguage(resolveLanguage(settings.language));
+    // The glass effect is expensive on TVs. Anyone who wants it can turn it on.
     if (isTV && stored?.appearance?.glass === undefined) settings.appearance.glass = false;
     return settings;
   } catch {
-    return mergeSettings(null);
+    const settings = mergeSettings(null);
+    setLanguage(resolveLanguage(settings.language));
+    return settings;
   }
 }
 
@@ -88,7 +92,7 @@ export function saveSettings(settings: Settings) {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {
-    /* Einstellungen gelten dann nur für diese Sitzung. */
+    /* Settings then only apply to this session. */
   }
 }
 

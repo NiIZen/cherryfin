@@ -4,6 +4,7 @@ import { useApp, useData } from '../app/context';
 import { BackspaceIcon, SpaceIcon } from '../ui/Icons';
 import { RetryMessage } from '../ui/RetryMessage';
 import { Row } from '../ui/Row';
+import { t } from '../i18n';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ'.split('');
 
@@ -19,8 +20,8 @@ export function SearchScreen({ active }: { active: boolean }) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Tippen auf der echten Tastatur geht direkt ins Suchfeld.
-  // Läuft in der Capture-Phase, damit die Rücktaste hier löscht statt zurückzuspringen.
+  // Typing on the real keyboard goes straight into the search field.
+  // Runs in the capture phase so Backspace deletes here instead of going back.
   useEffect(() => {
     if (!active) return;
     const onKey = (event: KeyboardEvent) => {
@@ -60,24 +61,24 @@ export function SearchScreen({ active }: { active: boolean }) {
   return (
     <div className="page search-page" data-vscroll data-search-active={active ? '' : undefined}>
       <section className="search-head" data-section="top">
-        <div className={`search-query ${query ? '' : 'empty'}`} aria-live="polite">{query || 'Filme und Serien suchen'}<i className="caret" /></div>
+        <div className={`search-query ${query ? '' : 'empty'}`} aria-live="polite">{query || t('Search movies and shows')}<i className="caret" /></div>
         <div className="keyboard" data-focus-group>
-          <button type="button" className="key key-wide" data-focusable aria-label="Leerzeichen" onClick={() => setQuery((q) => `${q} `)}><SpaceIcon /></button>
+          <button type="button" className="key key-wide" data-focusable aria-label={t('Space')} onClick={() => setQuery((q) => `${q} `)}><SpaceIcon /></button>
           {LETTERS.map((letter) => (
             <button key={letter} type="button" className="key" data-focusable onClick={() => setQuery((q) => (q ? q + letter.toLowerCase() : letter))}>{letter}</button>
           ))}
-          <button type="button" className="key key-wide" data-focusable aria-label="Löschen" onClick={() => setQuery((q) => q.slice(0, -1))}><BackspaceIcon /></button>
+          <button type="button" className="key key-wide" data-focusable aria-label={t('Delete')} onClick={() => setQuery((q) => q.slice(0, -1))}><BackspaceIcon /></button>
         </div>
       </section>
       <div className="rows rows-plain">
-        {results.error && <RetryMessage title="Suche fehlgeschlagen" message={results.error.message} />}
+        {results.error && <RetryMessage title={t('Search failed')} message={results.error.message} />}
         {debounced && data && data.total === 0 && !results.loading && (
-          <div className="screen-message"><h2>Keine Treffer</h2><p>Für „{debounced}“ wurde nichts gefunden.</p></div>
+          <div className="screen-message"><h2>{t('No results')}</h2><p>{t('Nothing found for “{query}”.', { query: debounced })}</p></div>
         )}
-        <Row title="Vorschläge" items={data?.suggestions} variant="poster" />
-        <Row title="Filme" items={data?.movies} variant="poster" />
-        <Row title="Serien" items={data?.series} />
-        <Row title="Folgen" items={data?.episodes} onSelect={(item) => play(item)} />
+        <Row title={t('Suggestions')} items={data?.suggestions} variant="poster" />
+        <Row title={t('Movies')} items={data?.movies} variant="poster" />
+        <Row title={t('Shows')} items={data?.series} />
+        <Row title={t('Episodes')} items={data?.episodes} onSelect={(item) => play(item)} />
       </div>
     </div>
   );

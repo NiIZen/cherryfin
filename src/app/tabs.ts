@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { BaseItemKind, Item } from '../api/types';
 import { useApp, useData } from './context';
+import { t } from '../i18n';
 
 export interface LibraryTab {
   kind: 'library';
@@ -17,7 +18,7 @@ const VIEW_TYPES: Record<string, BaseItemKind[]> = {
   homevideos: ['Video'],
   musicvideos: ['MusicVideo'],
   boxsets: ['BoxSet'],
-  // Gemischte Bibliotheken haben keinen CollectionType.
+  // Mixed libraries have no CollectionType.
   '': ['Movie', 'Series', 'Video'],
   unknown: ['Movie', 'Series', 'Video'],
   folders: ['Movie', 'Series', 'Video'],
@@ -25,29 +26,29 @@ const VIEW_TYPES: Record<string, BaseItemKind[]> = {
 
 const DOCUMENTARY = /dokument|\bdoku|documentar/i;
 
-/** Jede Video-Bibliothek wird ein eigener Bereich. Musik, Bücher, Fotos und Live-TV bleiben außen vor. */
+/** Every video library becomes its own section. Music, books, photos and live TV are left out. */
 export function buildLibraryTabs(views: Item[], options: { merge?: boolean; genres?: string[] } = {}): LibraryTab[] {
   const tabs: LibraryTab[] = [];
   if (options.merge) {
-    if (views.some((v) => v.CollectionType === 'movies')) tabs.push({ kind: 'library', id: 'movies', label: 'Filme', types: ['Movie'] });
-    if (views.some((v) => v.CollectionType === 'tvshows')) tabs.push({ kind: 'library', id: 'series', label: 'Serien', types: ['Series'] });
+    if (views.some((v) => v.CollectionType === 'movies')) tabs.push({ kind: 'library', id: 'movies', label: t('Movies'), types: ['Movie'] });
+    if (views.some((v) => v.CollectionType === 'tvshows')) tabs.push({ kind: 'library', id: 'series', label: t('Shows'), types: ['Series'] });
   }
   for (const view of views) {
     const type = view.CollectionType ?? '';
     if (options.merge && (type === 'movies' || type === 'tvshows')) continue;
     const types = VIEW_TYPES[type];
-    if (types) tabs.push({ kind: 'library', id: view.Id!, label: view.Name ?? 'Mediathek', types, parentId: view.Id! });
+    if (types) tabs.push({ kind: 'library', id: view.Id!, label: view.Name ?? t('Library'), types, parentId: view.Id! });
   }
 
-  // Liegen Dokumentationen in keiner eigenen Bibliothek, entsteht der Bereich aus dem Genre.
+  // If documentaries have no library of their own, the section is built from the genre.
   const genres = (options.genres ?? []).filter((genre) => DOCUMENTARY.test(genre));
   if (genres.length && !tabs.some((tab) => DOCUMENTARY.test(tab.label))) {
-    tabs.push({ kind: 'library', id: 'genre-documentary', label: 'Dokumentationen', types: ['Movie', 'Series'], genres });
+    tabs.push({ kind: 'library', id: 'genre-documentary', label: t('Documentaries'), types: ['Movie', 'Series'], genres });
   }
   return tabs;
 }
 
-/** Eigene Reihenfolge zuerst, neue Bereiche hängen sich hinten an. */
+/** Custom order first; new sections are appended at the end. */
 export function orderTabs<T extends { id: string }>(tabs: T[], order: string[]): T[] {
   const position = (id: string) => {
     const index = order.indexOf(id);

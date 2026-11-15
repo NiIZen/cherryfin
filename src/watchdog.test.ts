@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineEvents, MpvEngine as MpvEngineType } from './player/engines';
-// @ts-expect-error Der Hauptprozess ist reines CommonJS ohne Typen.
+// @ts-expect-error The main process is plain CommonJS without types.
 import { wakeArgs } from '../electron/mpv.cjs';
 
 type Listener = (event: Record<string, unknown>) => void;
 
-/** Nachgestellte Brücke zum Hauptprozess. Sie merkt sich die Befehle und reicht mpv-Ereignisse weiter. */
+/** Stand-in for the bridge to the main process. It records commands and passes mpv events on. */
 function setup() {
   const commands: string[] = [];
   const loads: Array<[string, number]> = [];
@@ -37,7 +37,7 @@ function setup() {
 
 const property = (name: string, value: unknown) => ({ type: 'property', name, value });
 
-describe('Wächter gegen die stehende Audio-Uhr', () => {
+describe('Watchdog for a stalled audio clock', () => {
   let engine: MpvEngineType;
   let t: ReturnType<typeof setup>;
 
@@ -56,12 +56,12 @@ describe('Wächter gegen die stehende Audio-Uhr', () => {
 
   const restart = () => t.emit({ type: 'playback-restart' });
 
-  it('greift vor dem Start des Films nicht ein', () => {
+  it('does not step in before playback starts', () => {
     vi.advanceTimersByTime(10_000);
     expect(t.commands).toEqual([]);
   });
 
-  it('startet bei stehender Zeit die Audioausgabe neu und wechselt zuletzt auf exklusiv', () => {
+  it('restarts audio output when the time stands still and switches to exclusive last', () => {
     restart();
     vi.advanceTimersByTime(2600);
     expect(t.commands).toEqual(['reload-audio']);
@@ -70,7 +70,7 @@ describe('Wächter gegen die stehende Audio-Uhr', () => {
     expect(t.events.onNotice).toHaveBeenCalledOnce();
   });
 
-  it('meldet einen Fehler, wenn nichts hilft, und gibt dann Ruhe', () => {
+  it('reports an error when nothing helps, then stays quiet', () => {
     restart();
     vi.advanceTimersByTime(30_000);
     expect(t.commands).toHaveLength(4);
@@ -78,7 +78,7 @@ describe('Wächter gegen die stehende Audio-Uhr', () => {
     expect(t.events.onError.mock.calls[0][0]).toBe('fatal');
   });
 
-  it('bleibt still, solange die Zeit läuft', () => {
+  it('stays quiet while the time runs', () => {
     restart();
     for (let second = 1; second <= 20; second++) {
       t.emit(property('time-pos', second));
@@ -87,7 +87,7 @@ describe('Wächter gegen die stehende Audio-Uhr', () => {
     expect(t.commands).toEqual([]);
   });
 
-  it('zählt von vorn, wenn der Film wieder läuft', () => {
+  it('starts counting again once playback runs', () => {
     restart();
     vi.advanceTimersByTime(2600);
     t.emit(property('time-pos', 1));
@@ -97,21 +97,21 @@ describe('Wächter gegen die stehende Audio-Uhr', () => {
     expect(t.commands).toEqual(['reload-audio', 'reload-audio', 'reload-audio']);
   });
 
-  it('wertet Pause nicht als Hänger', () => {
+  it('does not count pause as a stall', () => {
     restart();
     t.emit(property('pause', true));
     vi.advanceTimersByTime(20_000);
     expect(t.commands).toEqual([]);
   });
 
-  it('wertet Nachladen nicht als Hänger', () => {
+  it('does not count buffering as a stall', () => {
     restart();
     t.emit(property('paused-for-cache', true));
     vi.advanceTimersByTime(20_000);
     expect(t.commands).toEqual([]);
   });
 
-  it('hört am Ende des Films auf', () => {
+  it('stops at the end of the title', () => {
     restart();
     t.emit({ type: 'end-file', reason: 'eof' });
     vi.advanceTimersByTime(20_000);
@@ -119,13 +119,13 @@ describe('Wächter gegen die stehende Audio-Uhr', () => {
   });
 });
 
-describe('Passthrough auf einem Gerät, das es nicht kann', () => {
+describe('Passthrough on a device that cannot do it', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
-  it('lädt nach einem gescheiterten Start mit PCM neu und nennt den Grund', async () => {
+  it('reloads with PCM after a failed start and states the reason', async () => {
     vi.useFakeTimers();
     const t = setup();
     const { MpvEngine } = await import('./player/engines');
@@ -135,15 +135,15 @@ describe('Passthrough auf einem Gerät, das es nicht kann', () => {
     await vi.advanceTimersByTimeAsync(10);
     expect(t.commands).toContain('pcm-audio');
     expect(t.loads.at(-1)).toEqual(['http://server/film', 12]);
-    expect(t.events.onNotice.mock.calls[0][0]).toContain('Passthrough');
-    // Ein zweites Mal gibt es keinen Grund: Passthrough ist für diesen Film aus.
+    expect(t.events.onNotice.mock.calls[0][0]).toContain('passthrough');
+    // No reason a second time: passthrough is off for this title.
     t.emit({ type: 'audio-failed' });
     await vi.advanceTimersByTimeAsync(10);
     expect(t.commands.filter((name) => name === 'pcm-audio')).toHaveLength(1);
     engine.destroy();
   });
 
-  it('lässt laufendes Passthrough in Ruhe', async () => {
+  it('leaves running passthrough alone', async () => {
     vi.useFakeTimers();
     const t = setup();
     const { MpvEngine } = await import('./player/engines');
@@ -156,14 +156,14 @@ describe('Passthrough auf einem Gerät, das es nicht kann', () => {
   });
 });
 
-describe('Aufwecken des Audiogeräts', () => {
-  it('öffnet das gewählte Gerät mit Stille', () => {
+describe('Waking the audio device', () => {
+  it('opens the chosen device with silence', () => {
     const args = wakeArgs('wasapi/{abc-123}');
     expect(args).toContain('--audio-device=wasapi/{abc-123}');
     expect(args).toContain('--vo=null');
     expect(args.at(-1)).toContain('anullsrc');
   });
-  it('lässt fremde Gerätenamen nicht durch', () => {
-    expect(wakeArgs('--script=boese.lua').join(' ')).not.toContain('boese');
+  it('lets no foreign device names through', () => {
+    expect(wakeArgs('--script=evil.lua').join(' ')).not.toContain('evil');
   });
 });

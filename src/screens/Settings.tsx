@@ -23,9 +23,10 @@ import { focusElement, focusFirstIn, inputMode } from '../focus/engine';
 import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ServerIcon } from '../ui/Icons';
 import { ChoiceRow, LibraryPrefRows, ON_OFF, VIEW_OPTIONS } from '../ui/SettingRows';
 import { isTV } from '../tv/platform';
+import { t } from '../i18n';
 
 const QUALITIES = [
-  { label: 'Maximal', value: 120_000_000 },
+  { label: 'Maximum', value: 120_000_000 },
   { label: '40 Mbit/s', value: 40_000_000 },
   { label: '20 Mbit/s', value: 20_000_000 },
   { label: '10 Mbit/s', value: 10_000_000 },
@@ -33,14 +34,14 @@ const QUALITIES = [
 ];
 
 const CATEGORIES = [
-  { id: 'appearance', label: 'Darstellung' },
-  { id: 'home', label: 'Startseite' },
-  { id: 'tabs', label: 'Bereiche' },
-  { id: 'library', label: 'Mediathek' },
-  { id: 'playback', label: 'Wiedergabe' },
-  { id: 'subtitles', label: 'Untertitel' },
-  { id: 'hotkeys', label: 'Tastenkürzel' },
-  { id: 'account', label: 'Konto' },
+  { id: 'appearance', label: 'Appearance' },
+  { id: 'home', label: 'Home' },
+  { id: 'tabs', label: 'Sections' },
+  { id: 'library', label: 'Library' },
+  { id: 'playback', label: 'Playback' },
+  { id: 'subtitles', label: 'Subtitles' },
+  { id: 'hotkeys', label: 'Keyboard shortcuts' },
+  { id: 'account', label: 'Account' },
 ] as const;
 
 type CategoryId = (typeof CATEGORIES)[number]['id'];
@@ -48,8 +49,8 @@ type CategoryId = (typeof CATEGORIES)[number]['id'];
 function MoveButtons({ canUp, canDown, onMove, label }: { canUp: boolean; canDown: boolean; onMove: (delta: number) => void; label: string }) {
   return (
     <>
-      <button type="button" className="round-btn small" data-focusable disabled={!canUp} aria-label={`${label} nach oben`} onClick={() => onMove(-1)}><ArrowUpIcon /></button>
-      <button type="button" className="round-btn small" data-focusable disabled={!canDown} aria-label={`${label} nach unten`} onClick={() => onMove(1)}><ArrowDownIcon /></button>
+      <button type="button" className="round-btn small" data-focusable disabled={!canUp} aria-label={t('Move {name} up', { name: label })} onClick={() => onMove(-1)}><ArrowUpIcon /></button>
+      <button type="button" className="round-btn small" data-focusable disabled={!canDown} aria-label={t('Move {name} down', { name: label })} onClick={() => onMove(1)}><ArrowDownIcon /></button>
     </>
   );
 }
@@ -61,8 +62,13 @@ function AppearancePanel() {
 
   return (
     <>
-      <h2 className="settings-heading">Farbe</h2>
-      <div className="swatches" data-focus-group role="radiogroup" aria-label="Akzentfarbe">
+      <h2 className="settings-heading">{t('Language')}</h2>
+      <div className="list-group">
+        <ChoiceRow label="Language" value={settings.language} options={[{ value: 'auto', label: 'Automatic' }, { value: 'de', label: 'Deutsch' }, { value: 'en', label: 'English' }]} onChange={(language) => updateSettings({ language })} />
+      </div>
+
+      <h2 className="settings-heading">{t('Color')}</h2>
+      <div className="swatches" data-focus-group role="radiogroup" aria-label={t('Accent color')}>
         {ACCENTS.map((accent) => (
           <button
             key={accent.id}
@@ -72,7 +78,7 @@ function AppearancePanel() {
             data-accent={accent.id}
             role="radio"
             aria-checked={a.accent === accent.id}
-            aria-label={accent.label}
+            aria-label={t(accent.label)}
             style={{ background: accent.bg, color: accent.fg }}
             onClick={() => set('accent', accent.id)}
           >
@@ -81,30 +87,30 @@ function AppearancePanel() {
         ))}
       </div>
       <div className="list-group">
-        <ChoiceRow label="Hintergrund" value={a.background} options={[{ value: 'black', label: 'Schwarz' }, { value: 'graphite', label: 'Graphit' }, { value: 'slate', label: 'Nachtblau' }]} onChange={(v) => set('background', v)} />
+        <ChoiceRow label={t('Background')} value={a.background} options={[{ value: 'black', label: t('Black') }, { value: 'graphite', label: t('Graphite') }, { value: 'slate', label: t('Midnight blue') }]} onChange={(v) => set('background', v)} />
       </div>
 
-      <h2 className="settings-heading">Oberfläche</h2>
+      <h2 className="settings-heading">{t('Interface')}</h2>
       <div className="list-group">
-        <ChoiceRow label="Größe der Oberfläche" value={a.scale} options={[80, 90, 100, 110, 125, 150].map((value) => ({ value, label: `${value} %` }))} onChange={(v) => set('scale', v)} />
-        <ChoiceRow label="Schrift" value={a.font} options={[{ value: 'inter', label: 'Inter' }, { value: 'system', label: 'Segoe UI' }]} onChange={(v) => set('font', v)} />
-        <ChoiceRow label="Ecken" value={a.corners} options={[{ value: 'normal', label: 'Abgerundet' }, { value: 'round', label: 'Stark gerundet' }, { value: 'sharp', label: 'Eckig' }]} onChange={(v) => set('corners', v)} />
-        <ChoiceRow label="Glaseffekt" value={a.glass} options={ON_OFF} onChange={(v) => set('glass', v)} />
-        <ChoiceRow label="Animationen" value={a.motion} options={ON_OFF} onChange={(v) => set('motion', v)} />
-        <ChoiceRow label="Sparmodus" hint="Schaltet Glas, Animationen und Neigen ab, für schwächere Geräte" value={a.lowPower} options={ON_OFF} onChange={(v) => set('lowPower', v)} />
-        <ChoiceRow label="Hintergrund der Detailseite" value={a.detailBackground} options={[{ value: 'blurred', label: 'Bild mit Glas' }, { value: 'sharp', label: 'Bild ohne Glas' }, { value: 'off', label: 'Kein Bild' }]} onChange={(v) => set('detailBackground', v)} />
+        <ChoiceRow label={t('Interface size')} value={a.scale} options={[80, 90, 100, 110, 125, 150].map((value) => ({ value, label: `${value} %` }))} onChange={(v) => set('scale', v)} />
+        <ChoiceRow label={t('Font')} value={a.font} options={[{ value: 'inter', label: 'Inter' }, { value: 'system', label: 'Segoe UI' }]} onChange={(v) => set('font', v)} />
+        <ChoiceRow label={t('Corners')} value={a.corners} options={[{ value: 'normal', label: t('Rounded') }, { value: 'round', label: t('Very rounded') }, { value: 'sharp', label: t('Square') }]} onChange={(v) => set('corners', v)} />
+        <ChoiceRow label={t('Glass effect')} value={a.glass} options={ON_OFF} onChange={(v) => set('glass', v)} />
+        <ChoiceRow label={t('Animations')} value={a.motion} options={ON_OFF} onChange={(v) => set('motion', v)} />
+        <ChoiceRow label={t('Power saving')} hint={t('Turns off glass, animations and tilt, for less powerful devices')} value={a.lowPower} options={ON_OFF} onChange={(v) => set('lowPower', v)} />
+        <ChoiceRow label={t('Detail page background')} value={a.detailBackground} options={[{ value: 'blurred', label: t('Image with glass') }, { value: 'sharp', label: t('Image without glass') }, { value: 'off', label: t('No image') }]} onChange={(v) => set('detailBackground', v)} />
       </div>
 
-      <h2 className="settings-heading">Karten und Fokus</h2>
+      <h2 className="settings-heading">{t('Cards and focus')}</h2>
       <div className="list-group">
-        <ChoiceRow label="Kartengröße in Reihen" value={a.cardScale} options={[{ value: 0.8, label: 'Klein' }, { value: 1, label: 'Mittel' }, { value: 1.2, label: 'Groß' }, { value: 1.4, label: 'Sehr groß' }]} onChange={(v) => set('cardScale', v)} />
-        <ChoiceRow label="Titel unter Karten in Reihen" value={a.labels} options={[{ value: 'auto', label: 'Automatisch' }, { value: 'always', label: 'Immer' }, { value: 'focus', label: 'Nur im Fokus' }, { value: 'off', label: 'Nie' }]} onChange={(v) => set('labels', v)} />
-        <ChoiceRow label="Fokus-Zoom" value={a.focusZoom} options={[{ value: 'normal', label: 'Normal' }, { value: 'large', label: 'Groß' }, { value: 'small', label: 'Dezent' }]} onChange={(v) => set('focusZoom', v)} />
-        <ChoiceRow label="Neigen und Glanz" value={a.tilt} options={ON_OFF} onChange={(v) => set('tilt', v)} />
-        <ChoiceRow label="Fokusrahmen in Akzentfarbe" value={a.focusRing} options={ON_OFF} onChange={(v) => set('focusRing', v)} />
-        <ChoiceRow label="Fortschrittsbalken" value={a.progress} options={ON_OFF} onChange={(v) => set('progress', v)} />
-        <ChoiceRow label="Haken bei Gesehenem" value={a.watched} options={ON_OFF} onChange={(v) => set('watched', v)} />
-        <ChoiceRow label="Spoiler-Schutz" hint="Verdeckt Bild und Inhalt ungesehener Folgen" value={a.spoilerProtection} options={ON_OFF} onChange={(v) => set('spoilerProtection', v)} />
+        <ChoiceRow label={t('Card size in rows')} value={a.cardScale} options={[{ value: 0.8, label: t('Small') }, { value: 1, label: t('Medium') }, { value: 1.2, label: t('Large') }, { value: 1.4, label: t('Very large') }]} onChange={(v) => set('cardScale', v)} />
+        <ChoiceRow label={t('Titles below cards in rows')} value={a.labels} options={[{ value: 'auto', label: t('Automatic') }, { value: 'always', label: t('Always') }, { value: 'focus', label: t('Only when focused') }, { value: 'off', label: t('Never') }]} onChange={(v) => set('labels', v)} />
+        <ChoiceRow label={t('Focus zoom')} value={a.focusZoom} options={[{ value: 'normal', label: 'Normal' }, { value: 'large', label: t('Large') }, { value: 'small', label: t('Subtle') }]} onChange={(v) => set('focusZoom', v)} />
+        <ChoiceRow label={t('Tilt and shine')} value={a.tilt} options={ON_OFF} onChange={(v) => set('tilt', v)} />
+        <ChoiceRow label={t('Focus ring in accent color')} value={a.focusRing} options={ON_OFF} onChange={(v) => set('focusRing', v)} />
+        <ChoiceRow label={t('Progress bars')} value={a.progress} options={ON_OFF} onChange={(v) => set('progress', v)} />
+        <ChoiceRow label={t('Checkmark on watched')} value={a.watched} options={ON_OFF} onChange={(v) => set('watched', v)} />
+        <ChoiceRow label={t('Spoiler protection')} hint={t('Hides the image and summary of unwatched episodes')} value={a.spoilerProtection} options={ON_OFF} onChange={(v) => set('spoilerProtection', v)} />
       </div>
     </>
   );
@@ -117,30 +123,30 @@ function HomePanel() {
 
   return (
     <>
-      <h2 className="settings-heading">Titelbereich</h2>
+      <h2 className="settings-heading">{t('Header')}</h2>
       <div className="list-group">
-        <ChoiceRow label="Anzeige" value={home.hero} options={[{ value: 'carousel', label: 'Wechselnd' }, { value: 'static', label: 'Feststehend' }, { value: 'off', label: 'Aus' }]} onChange={(v) => set({ hero: v })} />
-        <ChoiceRow label="Wechsel alle" value={home.heroSeconds} options={[5, 9, 15, 30].map((value) => ({ value, label: `${value} Sekunden` }))} onChange={(v) => set({ heroSeconds: v })} />
-        <ChoiceRow label="Inhalt" value={home.heroSource} options={[{ value: 'new', label: 'Neu hinzugefügt' }, { value: 'continue', label: 'Weiter ansehen' }, { value: 'nextup', label: 'Nächste Folgen' }, { value: 'mixed', label: 'Weiter ansehen und Nächste Folgen' }]} onChange={(v) => set({ heroSource: v })} />
-        <ChoiceRow label="Beschreibung zeigen" value={home.heroDetails} options={ON_OFF} onChange={(v) => set({ heroDetails: v })} />
-        <ChoiceRow label="Kartenformat" value={home.cardStyle} options={[{ value: 'auto', label: 'Automatisch' }, { value: 'poster', label: 'Hochformat' }, { value: 'landscape', label: 'Querformat' }]} onChange={(v) => set({ cardStyle: v })} />
+        <ChoiceRow label={t('Display')} value={home.hero} options={[{ value: 'carousel', label: t('Rotating') }, { value: 'static', label: t('Fixed') }, { value: 'off', label: t('Off') }]} onChange={(v) => set({ hero: v })} />
+        <ChoiceRow label={t('Rotate every')} value={home.heroSeconds} options={[5, 9, 15, 30].map((value) => ({ value, label: t('{value} seconds', { value }) }))} onChange={(v) => set({ heroSeconds: v })} />
+        <ChoiceRow label={t('Content')} value={home.heroSource} options={[{ value: 'new', label: t('Recently added') }, { value: 'continue', label: t('Continue watching') }, { value: 'nextup', label: t('Next up') }, { value: 'mixed', label: t('Continue watching and next up') }]} onChange={(v) => set({ heroSource: v })} />
+        <ChoiceRow label={t('Show description')} value={home.heroDetails} options={ON_OFF} onChange={(v) => set({ heroDetails: v })} />
+        <ChoiceRow label={t('Card format')} value={home.cardStyle} options={[{ value: 'auto', label: t('Automatic') }, { value: 'poster', label: t('Portrait') }, { value: 'landscape', label: t('Landscape') }]} onChange={(v) => set({ cardStyle: v })} />
       </div>
 
-      <h2 className="settings-heading">Weiter ansehen</h2>
+      <h2 className="settings-heading">{t('Continue watching')}</h2>
       <div className="list-group">
-        <ChoiceRow label="Aufteilung" value={home.continueMode} options={[{ value: 'combined', label: 'Zusammen in einer Reihe' }, { value: 'separate', label: 'Zwei getrennte Reihen' }, { value: 'resume', label: 'Nur Angefangenes' }, { value: 'nextup', label: 'Nur nächste Folgen' }]} onChange={(v) => set({ continueMode: v })} />
-        <ChoiceRow label="Nächste Folgen aus Serien der letzten" value={home.nextUpDays} options={[{ value: 0, label: 'Unbegrenzt' }, { value: 30, label: '30 Tage' }, { value: 90, label: '3 Monate' }, { value: 180, label: '6 Monate' }, { value: 365, label: '1 Jahr' }]} onChange={(v) => set({ nextUpDays: v })} />
+        <ChoiceRow label={t('Row split')} value={home.continueMode} options={[{ value: 'combined', label: t('Together in one row') }, { value: 'separate', label: t('Two separate rows') }, { value: 'resume', label: t('Started only') }, { value: 'nextup', label: t('Next up only') }]} onChange={(v) => set({ continueMode: v })} />
+        <ChoiceRow label={t('Next up from shows watched in the last')} value={home.nextUpDays} options={[{ value: 0, label: t('No limit') }, { value: 30, label: t('30 days') }, { value: 90, label: t('3 months') }, { value: 180, label: t('6 months') }, { value: 365, label: t('1 year') }]} onChange={(v) => set({ nextUpDays: v })} />
       </div>
 
-      <h2 className="settings-heading">Reihen auf der Startseite</h2>
+      <h2 className="settings-heading">{t('Rows on the home screen')}</h2>
       <div className="list-group">
         {home.rows.map((row, index) => (
           <div key={row.id} className="pref-line" data-focus-group>
-            <button type="button" className="list-row" data-focusable data-setting={HOME_ROW_LABELS[row.id]} onClick={() => set({ rows: home.rows.map((r) => (r.id === row.id ? { ...r, enabled: !r.enabled } : r)) })}>
-              <span className="list-row-title">{HOME_ROW_LABELS[row.id]}</span>
-              <span className="list-row-value">{row.enabled ? 'Ein' : 'Aus'}</span>
+            <button type="button" className="list-row" data-focusable data-setting={t(HOME_ROW_LABELS[row.id])} onClick={() => set({ rows: home.rows.map((r) => (r.id === row.id ? { ...r, enabled: !r.enabled } : r)) })}>
+              <span className="list-row-title">{t(HOME_ROW_LABELS[row.id])}</span>
+              <span className="list-row-value">{row.enabled ? t('On') : t('Off')}</span>
             </button>
-            <MoveButtons label={HOME_ROW_LABELS[row.id]} canUp={index > 0} canDown={index < home.rows.length - 1} onMove={(delta) => set({ rows: moveItem(home.rows, index, delta) })} />
+            <MoveButtons label={t(HOME_ROW_LABELS[row.id])} canUp={index > 0} canDown={index < home.rows.length - 1} onMove={(delta) => set({ rows: moveItem(home.rows, index, delta) })} />
           </div>
         ))}
       </div>
@@ -160,7 +166,7 @@ function TabsPanel() {
 
   return (
     <>
-      <h2 className="settings-heading">Bereiche in der Leiste oben</h2>
+      <h2 className="settings-heading">{t('Sections in the top bar')}</h2>
       <div className="list-group">
         {all.map((tab, index) => {
           const hidden = tabs.hidden.includes(tab.id);
@@ -174,17 +180,17 @@ function TabsPanel() {
                 onClick={() => updateSettings({ tabs: { ...tabs, hidden: hidden ? tabs.hidden.filter((id) => id !== tab.id) : [...tabs.hidden, tab.id] } })}
               >
                 <span className="list-row-title">{tab.label}</span>
-                <span className="list-row-value">{hidden ? 'Ausgeblendet' : 'Sichtbar'}</span>
+                <span className="list-row-value">{hidden ? t('Hidden') : t('Visible')}</span>
               </button>
-              <ChoiceRow label={`Ansicht: ${tab.label}`} value={prefsFor(settings, tab.id).view} options={VIEW_OPTIONS} onChange={(view) => setView(tab.id, view)} />
+              <ChoiceRow label={`${t('View')}: ${tab.label}`} value={prefsFor(settings, tab.id).view} options={VIEW_OPTIONS} onChange={(view) => setView(tab.id, view)} />
               <MoveButtons label={tab.label} canUp={index > 0} canDown={index < all.length - 1} onMove={(delta) => updateSettings({ tabs: { ...tabs, order: moveItem(ids, index, delta) } })} />
             </div>
           );
         })}
       </div>
-      <h2 className="settings-heading">Zusammenfassen</h2>
+      <h2 className="settings-heading">{t('Combine')}</h2>
       <div className="list-group">
-        <ChoiceRow label="Alle Film- und Serien-Bibliotheken zusammenlegen" value={tabs.merge} options={ON_OFF} onChange={(merge) => updateSettings({ tabs: { ...tabs, merge } })} />
+        <ChoiceRow label={t('Merge all movie and TV libraries')} value={tabs.merge} options={ON_OFF} onChange={(merge) => updateSettings({ tabs: { ...tabs, merge } })} />
       </div>
     </>
   );
@@ -195,13 +201,13 @@ function LibraryPanel() {
   const own = Object.keys(settings.libraryOverrides).length;
   return (
     <>
-      <h2 className="settings-heading">Standard für alle Bereiche</h2>
-      <p className="settings-note">Einzelne Bereiche passt du direkt dort über den Knopf „Ansicht“ an. Solche Anpassungen haben Vorrang.</p>
+      <h2 className="settings-heading">{t('Default for all sections')}</h2>
+      <p className="settings-note">{t('Adjust single sections right there with the “View” button. Those adjustments take priority.')}</p>
       <LibraryPrefRows prefs={settings.library} onChange={(key, value) => updateSettings({ library: { ...settings.library, [key]: value } })} />
       {own > 0 && (
         <div className="list-group spaced">
           <button type="button" className="list-row danger" data-focusable onClick={() => updateSettings({ libraryOverrides: {} })}>
-            <span className="list-row-title">Anpassungen einzelner Bereiche löschen</span>
+            <span className="list-row-title">{t('Clear adjustments of single sections')}</span>
             <span className="list-row-value">{own}</span>
           </button>
         </div>
@@ -210,14 +216,14 @@ function LibraryPanel() {
   );
 }
 
-const SEEK_LENGTHS = [5, 10, 15, 30, 60].map((value) => ({ value, label: `${value} Sekunden` }));
-const SEGMENT_OPTIONS: Array<{ value: SegmentAction; label: string }> = [{ value: 'ask', label: 'Knopf zeigen' }, { value: 'skip', label: 'Automatisch überspringen' }, { value: 'off', label: 'Nichts tun' }];
+const SEEK_LENGTHS = [5, 10, 15, 30, 60].map((value) => ({ value, label: t('{value} seconds', { value }) }));
+const SEGMENT_OPTIONS: Array<{ value: SegmentAction; label: string }> = [{ value: 'ask', label: 'Show button' }, { value: 'skip', label: 'Skip automatically' }, { value: 'off', label: 'Do nothing' }];
 const SEGMENT_ROWS: Array<{ kind: SegmentKind; label: string }> = [
   { kind: 'Intro', label: 'Intro' },
-  { kind: 'Recap', label: 'Rückblick' },
-  { kind: 'Commercial', label: 'Werbung' },
-  { kind: 'Preview', label: 'Vorschau' },
-  { kind: 'Outro', label: 'Abspann' },
+  { kind: 'Recap', label: 'Recap' },
+  { kind: 'Commercial', label: 'Commercials' },
+  { kind: 'Preview', label: 'Preview' },
+  { kind: 'Outro', label: 'Credits' },
 ];
 
 function PlaybackPanel() {
@@ -233,29 +239,29 @@ function PlaybackPanel() {
 
   return (
     <>
-      <h2 className="settings-heading">Wiedergabe</h2>
+      <h2 className="settings-heading">{t('Playback')}</h2>
       <div className="list-group">
-        <ChoiceRow label="Qualität im Heimnetz" value={settings.maxBitrate} options={QUALITIES} onChange={(maxBitrate) => updateSettings({ maxBitrate })} />
-        <ChoiceRow label="Qualität über das Internet" value={playback.maxBitrateInternet} options={QUALITIES} onChange={(maxBitrateInternet) => set({ maxBitrateInternet })} />
-        <ChoiceRow label="Nächste Folge automatisch" value={settings.autoplayNext} options={ON_OFF} onChange={(autoplayNext) => updateSettings({ autoplayNext })} />
-        {!isTV && <ChoiceRow label="Player im Vollbild starten" value={settings.fullscreenPlayback} options={ON_OFF} onChange={(fullscreenPlayback) => updateSettings({ fullscreenPlayback })} />}
-        <ChoiceRow label="Sprung zurück" value={playback.seekBack} options={SEEK_LENGTHS} onChange={(seekBack) => set({ seekBack })} />
-        <ChoiceRow label="Sprung vorwärts" value={playback.seekForward} options={SEEK_LENGTHS} onChange={(seekForward) => set({ seekForward })} />
-        <ChoiceRow label="Tonsprache merken" value={playback.rememberAudio} options={ON_OFF} onChange={(rememberAudio) => set({ rememberAudio })} />
-        <ChoiceRow label="Untertitelsprache merken" value={playback.rememberSubtitles} options={ON_OFF} onChange={(rememberSubtitles) => set({ rememberSubtitles })} />
-        <ChoiceRow label="Inkognito" hint="Der Server erfährt nichts, Fortschritt und Gesehen bleiben unverändert" value={playback.incognito} options={ON_OFF} onChange={(incognito) => set({ incognito })} />
-        <ChoiceRow label="Bildschirmschoner nach 1 Minute Pause" value={playback.screensaver} options={[{ value: 'off', label: 'Aus' }, { value: 'clock', label: 'Uhr' }, { value: 'logo', label: 'Logo' }]} onChange={(screensaver) => set({ screensaver })} />
+        <ChoiceRow label={t('Quality on the home network')} value={settings.maxBitrate} options={QUALITIES} onChange={(maxBitrate) => updateSettings({ maxBitrate })} />
+        <ChoiceRow label={t('Quality over the internet')} value={playback.maxBitrateInternet} options={QUALITIES} onChange={(maxBitrateInternet) => set({ maxBitrateInternet })} />
+        <ChoiceRow label={t('Play next episode automatically')} value={settings.autoplayNext} options={ON_OFF} onChange={(autoplayNext) => updateSettings({ autoplayNext })} />
+        {!isTV && <ChoiceRow label={t('Start player in full screen')} value={settings.fullscreenPlayback} options={ON_OFF} onChange={(fullscreenPlayback) => updateSettings({ fullscreenPlayback })} />}
+        <ChoiceRow label={t('Skip back')} value={playback.seekBack} options={SEEK_LENGTHS} onChange={(seekBack) => set({ seekBack })} />
+        <ChoiceRow label={t('Skip forward')} value={playback.seekForward} options={SEEK_LENGTHS} onChange={(seekForward) => set({ seekForward })} />
+        <ChoiceRow label={t('Remember audio language')} value={playback.rememberAudio} options={ON_OFF} onChange={(rememberAudio) => set({ rememberAudio })} />
+        <ChoiceRow label={t('Remember subtitle language')} value={playback.rememberSubtitles} options={ON_OFF} onChange={(rememberSubtitles) => set({ rememberSubtitles })} />
+        <ChoiceRow label={t('Incognito')} hint={t('The server is not told anything; progress and watched state stay unchanged')} value={playback.incognito} options={ON_OFF} onChange={(incognito) => set({ incognito })} />
+        <ChoiceRow label={t('Screensaver after 1 minute of pause')} value={playback.screensaver} options={[{ value: 'off', label: t('Off') }, { value: 'clock', label: t('Clock') }, { value: 'logo', label: 'Logo' }]} onChange={(screensaver) => set({ screensaver })} />
       </div>
 
-      <h2 className="settings-heading">Bild</h2>
+      <h2 className="settings-heading">{t('Picture')}</h2>
       <div className="list-group">
-        <ChoiceRow label="Bildanpassung" value={playback.fit} options={[{ value: 'contain', label: 'Einpassen' }, { value: 'cover', label: 'Füllen und beschneiden' }, { value: 'fill', label: 'Strecken' }]} onChange={(fit) => set({ fit })} />
-        {usesMpv && <ChoiceRow label="Hardware-Dekodierung" value={playback.hardwareDecoding} options={ON_OFF} onChange={(hardwareDecoding) => set({ hardwareDecoding })} />}
-        {usesMpv && <ChoiceRow label="Puffer für den Stream" value={playback.bufferMb} options={[64, 128, 256, 512, 1024, 2048].map((value) => ({ value, label: value >= 1024 ? `${value / 1024} GB` : `${value} MB` }))} onChange={(bufferMb) => set({ bufferMb })} />}
+        <ChoiceRow label={t('Picture fit')} value={playback.fit} options={[{ value: 'contain', label: t('Fit') }, { value: 'cover', label: t('Fill and crop') }, { value: 'fill', label: t('Stretch') }]} onChange={(fit) => set({ fit })} />
+        {usesMpv && <ChoiceRow label={t('Hardware decoding')} value={playback.hardwareDecoding} options={ON_OFF} onChange={(hardwareDecoding) => set({ hardwareDecoding })} />}
+        {usesMpv && <ChoiceRow label={t('Stream buffer')} value={playback.bufferMb} options={[64, 128, 256, 512, 1024, 2048].map((value) => ({ value, label: value >= 1024 ? `${value / 1024} GB` : `${value} MB` }))} onChange={(bufferMb) => set({ bufferMb })} />}
       </div>
 
-      <h2 className="settings-heading">Intro, Abspann und andere Abschnitte</h2>
-      <p className="settings-note">Wirkt, wenn der Server die Abschnitte kennt, zum Beispiel über Intro Skipper.</p>
+      <h2 className="settings-heading">{t('Intro, credits and other segments')}</h2>
+      <p className="settings-note">{t('Works when the server knows the segments, for example through Intro Skipper.')}</p>
       <div className="list-group">
         {SEGMENT_ROWS.map(({ kind, label }) => (
           <ChoiceRow key={kind} label={label} value={playback.segments[kind]} options={SEGMENT_OPTIONS} onChange={(action) => set({ segments: { ...playback.segments, [kind]: action } })} />
@@ -264,11 +270,11 @@ function PlaybackPanel() {
 
       {!isTV && (
         <>
-          <h2 className="settings-heading">Maus und Tastatur</h2>
+          <h2 className="settings-heading">{t('Mouse and keyboard')}</h2>
           <div className="list-group">
-            <ChoiceRow label="Tempo beim Halten der Maustaste" value={playback.speedBoost} options={[{ value: 0, label: 'Aus' }, { value: 1.5, label: '1,5×' }, { value: 2, label: '2×' }, { value: 3, label: '3×' }]} onChange={(speedBoost) => set({ speedBoost })} />
-            <ChoiceRow label="Doppelklick auf das Bild" hint="Spulen: links zurück, rechts vorwärts, Mitte Vollbild" value={playback.doubleClick} options={[{ value: 'fullscreen', label: 'Vollbild' }, { value: 'seek', label: 'Spulen' }]} onChange={(doubleClick) => set({ doubleClick })} />
-            <ChoiceRow label="Medientasten der Tastatur" value={playback.mediaKeys} options={ON_OFF} onChange={(mediaKeys) => set({ mediaKeys })} />
+            <ChoiceRow label={t('Speed while holding the mouse button')} value={playback.speedBoost} options={[{ value: 0, label: t('Off') }, { value: 1.5, label: '1,5×' }, { value: 2, label: '2×' }, { value: 3, label: '3×' }]} onChange={(speedBoost) => set({ speedBoost })} />
+            <ChoiceRow label={t('Double-click on the picture')} hint={t('Seek: left back, right forward, middle full screen')} value={playback.doubleClick} options={[{ value: 'fullscreen', label: t('Full screen') }, { value: 'seek', label: t('Seek') }]} onChange={(doubleClick) => set({ doubleClick })} />
+            <ChoiceRow label={t('Keyboard media keys')} value={playback.mediaKeys} options={ON_OFF} onChange={(mediaKeys) => set({ mediaKeys })} />
           </div>
         </>
       )}
@@ -279,11 +285,11 @@ function PlaybackPanel() {
 }
 
 const SUBTITLE_COLORS = [
-  { value: '#ffffff', label: 'Weiß' },
-  { value: '#ffe066', label: 'Gelb' },
-  { value: '#cfcfcf', label: 'Hellgrau' },
-  { value: '#7fdfff', label: 'Hellblau' },
-  { value: '#9fef9f', label: 'Hellgrün' },
+  { value: '#ffffff', label: 'White' },
+  { value: '#ffe066', label: 'Yellow' },
+  { value: '#cfcfcf', label: 'Light gray' },
+  { value: '#7fdfff', label: 'Light blue' },
+  { value: '#9fef9f', label: 'Light green' },
 ];
 
 function SubtitlePanel() {
@@ -292,21 +298,21 @@ function SubtitlePanel() {
   const set = (patch: Partial<SubtitleSettings>) => updateSettings({ subtitles: { ...s, ...patch } });
   return (
     <>
-      <h2 className="settings-heading">Darstellung</h2>
-      <p className="settings-note">Gilt für Untertitel als Text. Bildbasierte Untertitel wie PGS bringen ihr Aussehen selbst mit. Bei ASS-Untertiteln behält mpv den Stil der Datei.</p>
+      <h2 className="settings-heading">{t('Appearance')}</h2>
+      <p className="settings-note">{t('Applies to text subtitles. Image-based subtitles such as PGS bring their own look. For ASS subtitles, mpv keeps the style of the file.')}</p>
       <div className="list-group">
-        <ChoiceRow label="Größe" value={s.size} options={[{ value: 32, label: 'Klein' }, { value: 44, label: 'Mittel' }, { value: 56, label: 'Groß' }, { value: 72, label: 'Sehr groß' }]} onChange={(size) => set({ size })} />
-        <ChoiceRow label="Schrift fett" value={s.bold} options={ON_OFF} onChange={(bold) => set({ bold })} />
-        <ChoiceRow label="Farbe" value={s.color} options={SUBTITLE_COLORS} onChange={(color) => set({ color })} />
-        <ChoiceRow label="Rand" value={s.outline} options={[{ value: 0, label: 'Kein' }, { value: 1, label: 'Dünn' }, { value: 2, label: 'Normal' }, { value: 4, label: 'Dick' }]} onChange={(outline) => set({ outline })} />
-        <ChoiceRow label="Hintergrund" value={s.background} options={[{ value: 'none', label: 'Keiner' }, { value: 'box', label: 'Dunkle Fläche' }]} onChange={(background) => set({ background })} />
-        <ChoiceRow label="Abstand vom unteren Rand" hint="Nur mit mpv" value={s.position} options={[{ value: 0, label: 'Kein' }, { value: 5, label: 'Klein' }, { value: 10, label: 'Mittel' }, { value: 20, label: 'Groß' }]} onChange={(position) => set({ position })} />
+        <ChoiceRow label={t('Size')} value={s.size} options={[{ value: 32, label: t('Small') }, { value: 44, label: t('Medium') }, { value: 56, label: t('Large') }, { value: 72, label: t('Very large') }]} onChange={(size) => set({ size })} />
+        <ChoiceRow label={t('Bold font')} value={s.bold} options={ON_OFF} onChange={(bold) => set({ bold })} />
+        <ChoiceRow label={t('Color')} value={s.color} options={SUBTITLE_COLORS} onChange={(color) => set({ color })} />
+        <ChoiceRow label={t('Outline')} value={s.outline} options={[{ value: 0, label: t('None') }, { value: 1, label: t('Thin') }, { value: 2, label: 'Normal' }, { value: 4, label: t('Thick') }]} onChange={(outline) => set({ outline })} />
+        <ChoiceRow label={t('Background')} value={s.background} options={[{ value: 'none', label: t('None') }, { value: 'box', label: t('Dark box') }]} onChange={(background) => set({ background })} />
+        <ChoiceRow label={t('Distance from the bottom')} hint={t('mpv only')} value={s.position} options={[{ value: 0, label: t('None') }, { value: 5, label: t('Small') }, { value: 10, label: t('Medium') }, { value: 20, label: t('Large') }]} onChange={(position) => set({ position })} />
       </div>
     </>
   );
 }
 
-/** Tasten, die schon eine feste Aufgabe haben. */
+/** Keys that already have a fixed job. */
 const RESERVED_KEYS = new Set(['enter', ' ', 'tab', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'backspace', 'f', 'f5', 'f11', 'shift', 'control', 'alt', 'meta', 'capslock']);
 
 function HotkeyPanel() {
@@ -325,7 +331,7 @@ function HotkeyPanel() {
       }
       const key = event.key.toLowerCase();
       if (RESERVED_KEYS.has(key)) return;
-      // Ist die Taste schon vergeben, tauschen die beiden Aktionen.
+      // If the key is taken, the two actions swap keys.
       const other = (Object.keys(hotkeys) as HotkeyAction[]).find((name) => hotkeys[name] === key);
       const next = { ...hotkeys, [listening]: key };
       if (other && other !== listening) next[other] = hotkeys[listening];
@@ -338,19 +344,19 @@ function HotkeyPanel() {
 
   return (
     <>
-      <h2 className="settings-heading">Im Player</h2>
-      <p className="settings-note">Eintrag wählen und die neue Taste drücken. Escape bricht ab. Leertaste, Pfeile, Enter und F bleiben fest belegt.</p>
+      <h2 className="settings-heading">{t('In the player')}</h2>
+      <p className="settings-note">{t('Select an entry and press the new key. Escape cancels. Space, arrows, Enter and F stay reserved.')}</p>
       <div className="list-group">
         {(Object.keys(HOTKEY_LABELS) as HotkeyAction[]).map((action) => (
           <button key={action} type="button" className="list-row" data-focusable data-hotkey={action} onClick={() => setListening(action)}>
-            <span className="list-row-title">{HOTKEY_LABELS[action]}</span>
-            <span className="list-row-value">{listening === action ? 'Taste drücken …' : hotkeys[action].toUpperCase()}</span>
+            <span className="list-row-title">{t(HOTKEY_LABELS[action])}</span>
+            <span className="list-row-value">{listening === action ? t('Press a key …') : hotkeys[action].toUpperCase()}</span>
           </button>
         ))}
       </div>
       <div className="list-group spaced">
         <button type="button" className="list-row" data-focusable onClick={() => updateSettings({ playback: { ...settings.playback, hotkeys: DEFAULT_SETTINGS.playback.hotkeys } })}>
-          <span className="list-row-title">Standard wiederherstellen</span>
+          <span className="list-row-title">{t('Restore defaults')}</span>
         </button>
       </div>
     </>
@@ -359,10 +365,10 @@ function HotkeyPanel() {
 
 const PASSTHROUGH_LABELS: Array<{ format: PassthroughFormat; label: string; hint?: string }> = [
   { format: 'ac3', label: 'Dolby Digital (AC3)' },
-  { format: 'eac3', label: 'Dolby Digital Plus (E-AC3)', hint: 'Auch Atmos in E-AC3' },
-  { format: 'truehd', label: 'Dolby TrueHD', hint: 'Auch Atmos in TrueHD' },
+  { format: 'eac3', label: 'Dolby Digital Plus (E-AC3)', hint: 'Also Atmos in E-AC3' },
+  { format: 'truehd', label: 'Dolby TrueHD', hint: 'Also Atmos in TrueHD' },
   { format: 'dts', label: 'DTS' },
-  { format: 'dts-hd', label: 'DTS-HD Master Audio', hint: 'Auch DTS:X' },
+  { format: 'dts-hd', label: 'DTS-HD Master Audio', hint: 'Also DTS:X' },
 ];
 
 function AudioPanel() {
@@ -381,12 +387,12 @@ function AudioPanel() {
   }, []);
 
   const usesMpv = available && settings.playerBackend === 'mpv';
-  const deviceOptions = devices.length ? devices.map((d) => ({ value: d.id, label: d.id === 'auto' ? 'Automatisch' : d.name })) : [{ value: 'auto', label: 'Automatisch' }];
+  const deviceOptions = devices.length ? devices.map((d) => ({ value: d.id, label: d.id === 'auto' ? t('Automatic') : d.name })) : [{ value: 'auto', label: t('Automatic') }];
   const channelRow = (
     <ChoiceRow
-      label="Tonkanäle"
+      label={t('Audio channels')}
       value={settings.audioChannels}
-      options={usesMpv ? [{ value: 6, label: 'Wie im Windows-Gerät eingerichtet' }, { value: 2, label: 'Stereo' }] : [{ value: 6, label: 'Bis zu 5.1' }, { value: 2, label: 'Stereo' }]}
+      options={usesMpv ? [{ value: 6, label: t('As set up in the Windows device') }, { value: 2, label: 'Stereo' }] : [{ value: 6, label: t('Up to 5.1') }, { value: 2, label: 'Stereo' }]}
       onChange={(audioChannels) => updateSettings({ audioChannels })}
     />
   );
@@ -397,23 +403,23 @@ function AudioPanel() {
         <>
           <h2 className="settings-heading">Player</h2>
           <div className="list-group">
-            <ChoiceRow label="Wiedergabe mit" value={settings.playerBackend} options={[{ value: 'mpv', label: 'mpv' }, { value: 'builtin', label: 'Eingebauter Player' }]} onChange={(playerBackend) => updateSettings({ playerBackend })} />
+            <ChoiceRow label={t('Play with')} value={settings.playerBackend} options={[{ value: 'mpv', label: 'mpv' }, { value: 'builtin', label: t('Built-in player') }]} onChange={(playerBackend) => updateSettings({ playerBackend })} />
           </div>
         </>
       )}
 
-      <h2 className="settings-heading">Ton</h2>
+      <h2 className="settings-heading">{t('Audio')}</h2>
       <div className="list-group">
-        {usesMpv && <ChoiceRow label="Ausgabegerät" value={audio.device} options={deviceOptions} onChange={(device) => setAudio({ device })} />}
-        <ChoiceRow label="Lautstärke beim Start" value={settings.playback.volume} options={[50, 60, 70, 80, 90, 100, 110, 120, 130].map((value) => ({ value, label: `${value} %` })).filter((option) => usesMpv || option.value <= 100)} onChange={(volume) => updateSettings({ playback: { ...settings.playback, volume } })} />
+        {usesMpv && <ChoiceRow label={t('Output device')} value={audio.device} options={deviceOptions} onChange={(device) => setAudio({ device })} />}
+        <ChoiceRow label={t('Volume at start')} value={settings.playback.volume} options={[50, 60, 70, 80, 90, 100, 110, 120, 130].map((value) => ({ value, label: `${value} %` })).filter((option) => usesMpv || option.value <= 100)} onChange={(volume) => updateSettings({ playback: { ...settings.playback, volume } })} />
         {channelRow}
-        {isTV && <ChoiceRow label="DTS direkt abspielen" hint="Nur einschalten, wenn dein Fernseher DTS kann" value={settings.tvDts} options={ON_OFF} onChange={(tvDts) => updateSettings({ tvDts })} />}
+        {isTV && <ChoiceRow label={t('Play DTS directly')} hint={t('Only turn on if your TV supports DTS')} value={settings.tvDts} options={ON_OFF} onChange={(tvDts) => updateSettings({ tvDts })} />}
         {usesMpv && (
           <ChoiceRow
-            label="Passthrough an den Receiver"
-            hint="Der Receiver dekodiert den Ton selbst"
+            label={t('Passthrough to the receiver')}
+            hint={t('The receiver decodes the audio itself')}
             value={audio.mode}
-            options={[{ value: 'pcm', label: 'Aus' }, { value: 'passthrough', label: 'Ein' }]}
+            options={[{ value: 'pcm', label: t('Off') }, { value: 'passthrough', label: t('On') }]}
             onChange={(mode) => setAudio({ mode, exclusive: mode === 'passthrough' ? true : audio.exclusive })}
           />
         )}
@@ -421,7 +427,7 @@ function AudioPanel() {
 
       {usesMpv && audio.mode === 'passthrough' && (
         <>
-          <h2 className="settings-heading">Formate für Passthrough</h2>
+          <h2 className="settings-heading">{t('Passthrough formats')}</h2>
           <div className="list-group">
             {PASSTHROUGH_LABELS.map(({ format, label, hint }) => {
               const on = audio.formats.includes(format);
@@ -442,19 +448,19 @@ function AudioPanel() {
 
       {usesMpv && (
         <div className="list-group spaced">
-          <ChoiceRow label="Exklusiver Audiomodus" hint="Sperrt andere Windows-Töne während der Wiedergabe" value={audio.exclusive} options={ON_OFF} onChange={(exclusive) => setAudio({ exclusive })} />
+          <ChoiceRow label={t('Exclusive audio mode')} hint={t('Mutes other Windows sounds during playback')} value={audio.exclusive} options={ON_OFF} onChange={(exclusive) => setAudio({ exclusive })} />
         </div>
       )}
 
       <p className="settings-note below">
         {isTV
-          ? 'Der Fernseher spielt die Dateien selbst ab und gibt den Ton nach seinen eigenen Einstellungen aus. Passthrough an einen Receiver stellst du in den Toneinstellungen des Fernsehers ein (HDMI ARC oder eARC).'
+          ? t('The TV plays the files itself and outputs audio according to its own settings. Set up passthrough to a receiver in the TV’s sound settings (HDMI ARC or eARC).')
           : usesMpv
-          ? 'Schalte nur Formate ein, die dein Receiver dekodiert. Für TrueHD und DTS-HD muss der exklusive Modus an sein. Ist Passthrough aus, dekodiert mpv den Ton und sendet unkomprimierten Mehrkanalton, ohne Atmos- und DTS:X-Objekte. Welche Ausgabe gerade läuft, steht im Player im Tonspur-Menü.'
+          ? t('Only turn on formats your receiver decodes. TrueHD and DTS-HD need exclusive mode. With passthrough off, mpv decodes the audio and sends uncompressed multichannel audio, without Atmos and DTS:X objects. The audio menu in the player shows the current output.')
           : client.isDemo
-            ? 'Der Demo-Modus nutzt immer den eingebauten Player. Dolby und DTS werden damit vom Server in AAC umgewandelt.'
-            : `${checked && window.native && !available ? 'mpv konnte nicht geladen werden, daher läuft der eingebaute Player. ' : ''}Der eingebaute Player kann kein Passthrough. Dolby und DTS wandelt der Server in AAC um.`}
-        {' '}Die Tonsprache legst du in deinem Jellyfin-Profil fest.
+            ? t('Demo mode always uses the built-in player. The server converts Dolby and DTS to AAC for it.')
+            : `${checked && window.native && !available ? `${t('mpv could not be loaded, so the built-in player is used.')} ` : ''}${t('The built-in player cannot do passthrough. The server converts Dolby and DTS to AAC.')}`}
+        {' '}{t('Set the audio language in your Jellyfin profile.')}
       </p>
     </>
   );
@@ -465,19 +471,19 @@ function AccountPanel() {
   const [confirmReset, setConfirmReset] = useState(false);
   return (
     <>
-      <h2 className="settings-heading">Verbindung</h2>
+      <h2 className="settings-heading">{t('Connection')}</h2>
       <div className="list-group">
         <div className="list-row static">
           <ServerIcon />
           <span className="list-row-title">{client.serverName}</span>
-          <span className="list-row-value">{client.isDemo ? 'Demo-Modus' : client.serverUrl}</span>
+          <span className="list-row-value">{client.isDemo ? t('Demo mode') : client.serverUrl}</span>
         </div>
         <button type="button" className="list-row danger" data-focusable onClick={signOut}>
-          <span className="list-row-title">{client.isDemo ? 'Demo beenden' : 'Abmelden'}</span>
+          <span className="list-row-title">{client.isDemo ? t('Exit demo') : t('Sign out')}</span>
         </button>
       </div>
 
-      <h2 className="settings-heading">Einstellungen</h2>
+      <h2 className="settings-heading">{t('Settings')}</h2>
       <div className="list-group">
         <button
           type="button"
@@ -494,17 +500,17 @@ function AccountPanel() {
           }}
           onBlur={() => setConfirmReset(false)}
         >
-          <span className="list-row-title">{confirmReset ? 'Wirklich alles zurücksetzen?' : 'Alle Einstellungen zurücksetzen'}</span>
+          <span className="list-row-title">{confirmReset ? t('Really reset everything?') : t('Reset all settings')}</span>
         </button>
       </div>
 
-      <h2 className="settings-heading">Tastatur und Gamepad</h2>
+      <h2 className="settings-heading">{t('Keyboard and gamepad')}</h2>
       <dl className="shortcut-list">
-        <div><dt>Pfeiltasten / Steuerkreuz</dt><dd>Navigieren, im Player 10 Sekunden springen</dd></div>
-        <div><dt>Enter / A</dt><dd>Auswählen</dd></div>
-        <div><dt>Esc, Rücktaste / B</dt><dd>Zurück</dd></div>
-        <div><dt>Leertaste / Start</dt><dd>Wiedergabe und Pause</dd></div>
-        {!isTV && <div><dt>F oder F11</dt><dd>Vollbild</dd></div>}
+        <div><dt>{t('Arrow keys / D-pad')}</dt><dd>{t('Navigate; in the player, skip 10 seconds')}</dd></div>
+        <div><dt>Enter / A</dt><dd>{t('Select')}</dd></div>
+        <div><dt>{t('Esc, Backspace / B')}</dt><dd>{t('Back')}</dd></div>
+        <div><dt>{t('Space / Start')}</dt><dd>{t('Play and pause')}</dd></div>
+        {!isTV && <div><dt>{t('F or F11')}</dt><dd>{t('Full screen')}</dd></div>}
       </dl>
     </>
   );
@@ -517,7 +523,7 @@ export function SettingsScreen() {
   const panel = useRef<HTMLDivElement>(null);
   const avatar = client.userImageUrl(client.user, 240);
 
-  // Die Kategorien stehen links, die Optionen rechts. Der Wechsel klappt auch ohne Zeile auf gleicher Höhe.
+  // Categories on the left, options on the right. Moving across works even without a row at the same height.
   useEffect(() => {
     const navEl = nav.current;
     const panelEl = panel.current;
@@ -554,7 +560,7 @@ export function SettingsScreen() {
               <p>{client.serverName}</p>
             </div>
           </div>
-          <nav className="list-group" ref={nav} aria-label="Einstellungen" data-focus-group data-section="top">
+          <nav className="list-group" ref={nav} aria-label={t('Settings')} data-focus-group data-section="top">
             {CATEGORIES.filter((entry) => !isTV || entry.id !== 'hotkeys').map((entry) => (
               <button
                 key={entry.id}
@@ -568,7 +574,7 @@ export function SettingsScreen() {
                   if (inputMode() === 'keyboard') setCategory(entry.id);
                 }}
               >
-                <span className="list-row-title">{entry.label}</span>
+                <span className="list-row-title">{t(entry.label)}</span>
               </button>
             ))}
           </nav>

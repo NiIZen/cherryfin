@@ -3,7 +3,7 @@ dist/
 dist-webos/
 release/
 *.log
-# mpv ist zu groß für Git (GitHub erlaubt 100 MB pro Datei), siehe README.
+# mpv is too large for Git (GitHub allows 100 MB per file), see the README.
 vendor/mpv/*.exe
 tests/e2e/node_modules/
 tests/e2e/shots/

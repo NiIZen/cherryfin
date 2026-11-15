@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { pushInterceptor } from '../focus/engine';
 import { ServerIcon } from '../ui/Icons';
+import { t } from '../i18n';
 
 interface OfflineScreenProps {
   serverName: string;
@@ -9,7 +10,7 @@ interface OfflineScreenProps {
   onSignOut: () => void;
 }
 
-/** Liegt über allem, solange der Server nicht antwortet. Im Hintergrund läuft die Prüfung weiter. */
+/** Lies on top of everything while the server does not respond. Checking continues in the background. */
 export function OfflineScreen({ serverName, serverUrl, onRetry, onSignOut }: OfflineScreenProps) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -29,7 +30,7 @@ export function OfflineScreen({ serverName, serverUrl, onRetry, onSignOut }: Off
     setBusy(true);
     setFailed(false);
     const ok = await onRetry();
-    // Bei Erfolg verschwindet dieser Screen von selbst.
+    // On success this screen disappears by itself.
     if (!ok) {
       setBusy(false);
       setFailed(true);
@@ -39,14 +40,14 @@ export function OfflineScreen({ serverName, serverUrl, onRetry, onSignOut }: Off
   return (
     <div className="offline" data-focus-scope role="alertdialog" aria-labelledby="offline-title">
       <div className="offline-icon"><ServerIcon /></div>
-      <h1 id="offline-title">Keine Verbindung</h1>
-      <p>„{serverName}“ antwortet gerade nicht. Prüfe dein Netzwerk und ob der Server läuft.</p>
-      <p className="offline-hint">{failed ? 'Immer noch keine Antwort. ' : ''}Cherryfin versucht es automatisch weiter.</p>
+      <h1 id="offline-title">{t('No connection')}</h1>
+      <p>{t('“{name}” is not responding right now. Check your network and whether the server is running.', { name: serverName })}</p>
+      <p className="offline-hint">{failed ? `${t('Still no response.')} ` : ''}{t('Cherryfin keeps trying automatically.')}</p>
       <div className="offline-actions">
         <button type="button" className="btn btn-primary" ref={button} data-focusable disabled={busy} onClick={retry}>
-          {busy ? 'Verbinde …' : 'Neu laden'}
+          {busy ? t('Connecting …') : t('Reload')}
         </button>
-        <button type="button" className="btn btn-glass" data-focusable onClick={onSignOut}>Abmelden</button>
+        <button type="button" className="btn btn-glass" data-focusable onClick={onSignOut}>{t('Sign out')}</button>
       </div>
       <p className="offline-url">{serverUrl}</p>
     </div>

@@ -6,6 +6,7 @@ import { Hero } from '../ui/Hero';
 import { RetryMessage } from '../ui/RetryMessage';
 import { Row } from '../ui/Row';
 import { Overview } from './Overview';
+import { t } from '../i18n';
 
 function LibraryRows({ tab }: { tab: LibraryTab }) {
   const { client, dataVersion, play, settings } = useApp();
@@ -42,11 +43,11 @@ function LibraryRows({ tab }: { tab: LibraryTab }) {
   return (
     <div className="page" data-vscroll>
       {showHero && <Hero items={hero.data!.items} />}
-      {rows.error && !data && <RetryMessage title="Laden fehlgeschlagen" message={rows.error.message} />}
+      {rows.error && !data && <RetryMessage title={t('Loading failed')} message={rows.error.message} />}
       <div className={showHero ? 'rows rows-overlap' : 'rows rows-plain'}>
-        <Row title="Weiter ansehen" items={data?.resume} onSelect={(item) => play(item)} />
-        <Row title="Neu hinzugefügt" items={data?.latest} variant={variant} more={{ title: `Alle: ${tab.label}`, query: allQuery }} />
-        <Row title="Bestbewertet" items={data?.rated} variant={variant} more={{ title: `${tab.label}: bestbewertet`, query: { ...scope, sortBy: ['CommunityRating'], sortOrder: 'Descending' } }} />
+        <Row title={t('Continue watching')} items={data?.resume} onSelect={(item) => play(item)} />
+        <Row title={t('Recently added')} items={data?.latest} variant={variant} more={{ title: `${t('All')}: ${tab.label}`, query: allQuery }} />
+        <Row title={t('Top rated')} items={data?.rated} variant={variant} more={{ title: t('{name}: top rated', { name: tab.label }), query: { ...scope, sortBy: ['CommunityRating'], sortOrder: 'Descending' } }} />
         {data?.byGenre.map(({ genre, items }) => (
           <Row key={genre} title={genre} items={items} variant={variant} more={{ title: genre, query: { ...scope, genres: [genre], sortBy: ['SortName'] } }} />
         ))}

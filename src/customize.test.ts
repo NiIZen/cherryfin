@@ -3,105 +3,105 @@ import { DEFAULT_SETTINGS, mergeSettings, moveItem, prefsFor } from './app/setti
 import { layoutRows, letterOf, letterStarts, rowOfItem, visibleRange, worthGrouping } from './app/virtualGrid';
 import { buildLibraryTabs, orderTabs } from './app/tabs';
 
-describe('Einstellungen', () => {
-  it('füllt fehlende Werte mit dem Standard auf', () => {
+describe('Settings', () => {
+  it('fills missing values with the defaults', () => {
     const merged = mergeSettings({ fullscreenPlayback: false, appearance: { accent: 'blue' } });
     expect(merged.fullscreenPlayback).toBe(false);
     expect(merged.appearance.accent).toBe('blue');
     expect(merged.appearance.tilt).toBe(true);
     expect(merged.library.view).toBe('overview');
   });
-  it('übersteht kaputte gespeicherte Werte', () => {
+  it('survives broken stored values', () => {
     expect(mergeSettings(null)).toEqual(DEFAULT_SETTINGS);
-    expect(mergeSettings('Unsinn')).toEqual(DEFAULT_SETTINGS);
+    expect(mergeSettings('nonsense')).toEqual(DEFAULT_SETTINGS);
   });
-  it('behält die Reihenfolge der Startseite und ergänzt neue Reihen', () => {
+  it('keeps the order of the home screen and adds new rows', () => {
     const merged = mergeSettings({ home: { rows: [{ id: 'favorites', enabled: false }, { id: 'gibtsnicht', enabled: true }] } });
     expect(merged.home.rows[0]).toEqual({ id: 'favorites', enabled: false });
     expect(merged.home.rows.map((r) => r.id)).not.toContain('gibtsnicht');
     expect(merged.home.rows).toHaveLength(6);
   });
-  it('lässt Anpassungen eines Bereichs nur dort gelten', () => {
+  it('applies adjustments of a section only there', () => {
     const settings = mergeSettings({ library: { size: 1 }, libraryOverrides: { filme: { layout: 'list' } } });
     expect(prefsFor(settings, 'filme')).toMatchObject({ layout: 'list', size: 1 });
     expect(prefsFor(settings, 'serien')).toMatchObject({ layout: 'grid', size: 1 });
   });
-  it('verschiebt Einträge und bleibt an den Rändern stehen', () => {
+  it('moves entries and stops at the ends', () => {
     expect(moveItem(['a', 'b', 'c'], 1, -1)).toEqual(['b', 'a', 'c']);
     expect(moveItem(['a', 'b', 'c'], 0, -1)).toEqual(['a', 'b', 'c']);
     expect(moveItem(['a', 'b', 'c'], 2, 1)).toEqual(['a', 'b', 'c']);
   });
 });
 
-describe('Bereiche', () => {
+describe('Sections', () => {
   const views = [
     { Id: '1', Name: 'Filme', CollectionType: 'movies' as const },
-    { Id: '2', Name: 'Dokumentationen', CollectionType: 'movies' as const },
+    { Id: '2', Name: 'Documentaries', CollectionType: 'movies' as const },
     { Id: '3', Name: 'Serien', CollectionType: 'tvshows' as const },
     { Id: '4', Name: 'Musik', CollectionType: 'music' as const },
     { Id: '5', Name: 'Gemischt' },
   ];
 
-  it('macht aus jeder Video-Bibliothek einen Bereich und lässt Musik weg', () => {
-    expect(buildLibraryTabs(views).map((t) => t.label)).toEqual(['Filme', 'Dokumentationen', 'Serien', 'Gemischt']);
+  it('turns every video library into a section and leaves out music', () => {
+    expect(buildLibraryTabs(views).map((t) => t.label)).toEqual(['Filme', 'Documentaries', 'Serien', 'Gemischt']);
     expect(buildLibraryTabs(views)[1]).toMatchObject({ parentId: '2', types: ['Movie'] });
   });
-  it('legt auf Wunsch Filme und Serien zusammen', () => {
+  it('merges movies and shows on request', () => {
     expect(buildLibraryTabs(views, { merge: true }).map((t) => t.id)).toEqual(['movies', 'series', '5']);
   });
-  it('baut Dokumentationen aus dem Genre, wenn es keine eigene Bibliothek gibt', () => {
+  it('builds documentaries from the genre when there is no library of their own', () => {
     const tabs = buildLibraryTabs([views[0]], { genres: ['Drama', 'Dokumentarfilm', 'Documentary'] });
-    expect(tabs.at(-1)).toMatchObject({ label: 'Dokumentationen', genres: ['Dokumentarfilm', 'Documentary'] });
+    expect(tabs.at(-1)).toMatchObject({ label: 'Documentaries', genres: ['Dokumentarfilm', 'Documentary'] });
   });
-  it('legt keinen zweiten Dokumentations-Bereich an', () => {
-    expect(buildLibraryTabs(views, { genres: ['Dokumentation'] }).filter((t) => /Dokument/.test(t.label))).toHaveLength(1);
+  it('does not create a second documentaries section', () => {
+    expect(buildLibraryTabs(views, { genres: ['Dokumentation'] }).filter((t) => /Dokument|Documentar/.test(t.label))).toHaveLength(1);
   });
-  it('hält sich an die eigene Reihenfolge und hängt Neues hinten an', () => {
-    const tabs = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'neu' }];
-    expect(orderTabs(tabs, ['c', 'a', 'b']).map((t) => t.id)).toEqual(['c', 'a', 'b', 'neu']);
+  it('keeps the custom order and appends new entries', () => {
+    const tabs = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'new' }];
+    expect(orderTabs(tabs, ['c', 'a', 'b']).map((t) => t.id)).toEqual(['c', 'a', 'b', 'new']);
   });
 });
 
-describe('A–Z-Übersicht', () => {
+describe('A–Z overview', () => {
   const named = (...names: string[]) => names.map((Name, i) => ({ Id: String(i), Name }));
   const options = { columns: 2, rowHeight: 100, headerHeight: 40, groupKey: letterOf };
 
-  it('ordnet Umlaute dem Grundbuchstaben zu und Sonstiges dem #', () => {
+  it('groups umlauts with their base letter and everything else under #', () => {
     expect(letterOf({ Name: 'Ärger' })).toBe('A');
     expect(letterOf({ Name: 'zeit' })).toBe('Z');
     expect(letterOf({ Name: '1984' })).toBe('#');
     expect(letterOf({ Name: '' })).toBe('#');
   });
-  it('bevorzugt den Sortiernamen des Servers', () => {
+  it('prefers the sort name from the server', () => {
     expect(letterOf({ Name: 'Der Pate', SortName: 'pate, der' })).toBe('P');
   });
-  it('merkt sich den ersten Titel je Buchstabe', () => {
+  it('remembers the first title per letter', () => {
     const starts = letterStarts(named('Aal', 'Axt', 'Bär', 'Zoo'));
     expect(starts.get('A')).toBe(0);
     expect(starts.get('B')).toBe(2);
     expect(starts.has('C')).toBe(false);
   });
-  it('spart sich Überschriften, wenn fast jeder Titel eine eigene bräuchte', () => {
+  it('skips headings when almost every title would need its own', () => {
     expect(worthGrouping(named('Atlas', 'Biene', 'Eis', 'Stadt', 'Zeit'), letterOf)).toBe(false);
     expect(worthGrouping(named('Aal', 'Axt', 'Arm', 'Bär', 'Biene', 'Berg'), letterOf)).toBe(true);
   });
-  it('legt Überschriften und Reihen an, ohne Gruppen zu mischen', () => {
+  it('creates headings and rows without mixing groups', () => {
     const { rows, height } = layoutRows(named('Aal', 'Axt', 'Arm', 'Bär'), options);
     expect(rows.map((r) => `${r.kind}:${r.start}-${r.end}`)).toEqual(['header:0-0', 'items:0-2', 'items:2-3', 'header:3-3', 'items:3-4']);
     expect(height).toBe(40 + 100 + 100 + 40 + 100);
   });
-  it('kommt ohne Gruppierung und ohne Titel zurecht', () => {
+  it('copes without grouping and without titles', () => {
     const { rows } = layoutRows(named('Aal', 'Bär', 'Zoo'), { ...options, groupKey: null });
     expect(rows.map((r) => r.end - r.start)).toEqual([2, 1]);
     expect(layoutRows([], options)).toEqual({ rows: [], height: 0 });
   });
-  it('findet die sichtbaren Reihen', () => {
+  it('finds the visible rows', () => {
     const { rows } = layoutRows(named(...Array.from({ length: 100 }, (_, i) => `A${i}`)), { ...options, groupKey: null });
     expect(visibleRange(rows, 250, 450)).toEqual([2, 4]);
     expect(visibleRange(rows, -500, 50)).toEqual([0, 0]);
     expect(visibleRange([], 0, 100)).toEqual([0, -1]);
   });
-  it('findet die Reihe eines Titels, auch direkt nach einer Überschrift', () => {
+  it('finds the row of a title, even right after a heading', () => {
     const { rows } = layoutRows(named('Aal', 'Axt', 'Arm', 'Bär'), options);
     expect(rows[rowOfItem(rows, 0)].kind).toBe('items');
     expect(rowOfItem(rows, 2)).toBe(2);

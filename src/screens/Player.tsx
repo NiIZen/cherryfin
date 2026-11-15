@@ -12,6 +12,7 @@ import { focusFirstIn, pushInterceptor, focusElement, setInputMode } from '../fo
 import { isFullscreen, setFullscreen } from '../app/session';
 import { Html5Engine, MpvEngine, type EngineEvents, type PlaybackEngine } from '../player/engines';
 import { AudioIcon, CheckIcon, NextIcon, PauseIcon, PlayIcon, SpeedIcon, SubtitlesIcon } from '../ui/Icons';
+import { locale, t } from '../i18n';
 
 const HIDE_AFTER_MS = 4000;
 const LONG_SEEK_STEP = 30;
@@ -19,20 +20,28 @@ const NOTICE_MS = 7000;
 const SAVER_DELAY_MS = 60_000;
 const UP_NEXT_SECONDS = 25;
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
-/** So lange darf das Video ohne Fortschritt laden, bevor eine Meldung erscheint. */
+/** How long the video may load without progress before a message appears. */
 const STALL_LIMIT_MS = 45_000;
 
 type Menu = 'subtitles' | 'audio' | 'speed' | null;
 
-const SEGMENT_LABELS: Record<string, string> = {
-  Intro: 'Intro überspringen',
-  Recap: 'Rückblick überspringen',
-  Preview: 'Vorschau überspringen',
-  Commercial: 'Werbung überspringen',
-  Outro: 'Abspann überspringen',
+const SEGMENT_DONE: Record<string, string> = {
+  Intro: 'Intro skipped',
+  Recap: 'Recap skipped',
+  Preview: 'Preview skipped',
+  Commercial: 'Commercial skipped',
+  Outro: 'Credits skipped',
 };
 
-/** Vorschaubild aus den Trickplay-Kacheln von Jellyfin. */
+const SEGMENT_LABELS: Record<string, string> = {
+  Intro: 'Skip intro',
+  Recap: 'Skip recap',
+  Preview: 'Skip preview',
+  Commercial: 'Skip commercial',
+  Outro: 'Skip credits',
+};
+
+/** Preview image from Jellyfin’s trickplay tiles. */
 function TrickplayThumb({ item, info, mediaSourceId, seconds }: { item: Item; info: TrickplayInfo; mediaSourceId: string; seconds: number }) {
   const { client } = useApp();
   const tile = trickplayTile(info, seconds);
@@ -52,7 +61,7 @@ function TrickplayThumb({ item, info, mediaSourceId, seconds }: { item: Item; in
   );
 }
 
-/** external: Das Video zeigt mpv im Fenster darunter, hier liegt nur die Bedienung. */
+/** external: mpv shows the video in the window below; this page only holds the controls. */
 export function PlayerScreen({ item: initialItem, startTicks, external = false }: { item: Item; startTicks: number; external?: boolean }) {
   const { client, pop, replaceTop, bumpData, settings } = useApp();
   const video = useRef<HTMLVideoElement>(null);
@@ -90,7 +99,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
   const boost = useRef<{ timer?: ReturnType<typeof setTimeout>; active: boolean; ignoreClick: boolean }>({ active: false, ignoreClick: false });
   const skippedSegments = useRef(new Set<string>());
 
-  // Spiegel des Zustands für Timer und Tastenbefehle, die nicht bei jedem Render neu entstehen sollen.
+  // Mirror of the state for timers and key commands that should not be recreated on every render.
   const state = useRef({ session, audioIndex, subtitleIndex, menu, overlay, scrub, time, duration, paused, error });
   state.current = { session, audioIndex, subtitleIndex, menu, overlay, scrub, time, duration, paused, error };
 
@@ -108,18 +117,18 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     };
   }, [initialItem.Id]);
 
-  /* ---------- Quelle laden ---------- */
+  /* ---------- Load the source ---------- */
 
   const load = useCallback(async (options: { startSeconds: number; audioIndex?: number; subtitleIndex?: number; forceTranscode?: boolean }) => {
     setError('');
     const limit = isLocalServer(client.serverUrl) ? settings.maxBitrate : settings.playback.maxBitrateInternet;
-    // Das Limit "Maximal" würde große Remux-Dateien in mpv grundlos umwandeln lassen.
+    // The "Maximum" limit would make mpv transcode large remux files for no reason.
     const effectiveBitrate = external && limit === DEFAULT_SETTINGS.maxBitrate ? 1_000_000_000 : limit;
     const previous = report();
     if (previous && !incognito) void client.reportStopped(previous).catch(() => undefined);
     try {
       const firstAudio = state.current.session ? streamsOf(state.current.session.source, 'Audio')[0]?.Index : undefined;
-      // Chromium kann im Direct Play die Tonspur nicht wechseln. Eine andere Spur braucht deshalb einen Remux.
+      // Chromium cannot switch audio tracks in direct play, so another track needs a remux.
       const needsRemux = !external && options.audioIndex !== undefined && firstAudio !== undefined && options.audioIndex !== firstAudio;
       const playback = await client.getPlayback(initialItem.Id!, {
         mediaSourceId: state.current.session?.source.Id ?? undefined,
@@ -131,11 +140,11 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
         external,
         dts: settings.tvDts,
       });
-      // Der Player wurde geschlossen, während die Anfrage lief.
+      // The player was closed while the request was running.
       if (disposed.current) return;
       setSession(playback);
       state.current.session = playback;
-      // Beim ersten Laden gilt die zuletzt gewählte Sprache, sofern es sie in diesem Film gibt.
+      // On the first load, the last chosen language applies if this title has it.
       const remembered = loadRemembered();
       const streams = playback.source.MediaStreams ?? [];
       const free = engine.current?.canChooseAtStart(playback) ?? false;
@@ -145,7 +154,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
       const subtitle = options.subtitleIndex ?? (free && rememberSubtitles ? pickRemembered(streams, 'Subtitle', remembered.subtitle, serverSubtitle) ?? -1 : serverSubtitle);
       setAudioIndex(audio);
       setSubtitleIndex(subtitle);
-      // Bei mpv erledigt das der Hauptprozess beim Laden.
+      // With mpv, the main process does this when loading.
       if (!external && window.native?.player) {
         await window.native.player.wakeAudio().catch(() => undefined);
         if (disposed.current) return;
@@ -154,7 +163,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
       const started = report(options.startSeconds);
       if (started && !incognito) void client.reportStart(started).catch(() => undefined);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Die Wiedergabe konnte nicht gestartet werden.');
+      setError(e instanceof Error ? e.message : t('Playback could not be started.'));
       setBuffering(false);
     }
   }, [client, external, incognito, initialItem.Id, rememberAudio, rememberSubtitles, report, settings.maxBitrate, settings.playback.maxBitrateInternet, settings.audioChannels, settings.tvDts]);
@@ -178,7 +187,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
       onAudioOutput: setAudioOutput,
       onNotice: setNotice,
       onError: (kind, message) => {
-        // Direct Play scheitert an der Datei: Der Server kann sie vielleicht trotzdem liefern.
+        // Direct play fails on the file: the server may still be able to deliver it.
         if (kind === 'media' && state.current.session?.method === 'DirectPlay') {
           void loadRef.current({ startSeconds: engine.current?.position() ?? 0, audioIndex: state.current.audioIndex, subtitleIndex: state.current.subtitleIndex, forceTranscode: true });
         } else {
@@ -209,11 +218,11 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
       engine.current = null;
       if (last && !incognito) client.reportStopped(last).catch(() => undefined).finally(bumpData);
     };
-    // Einmal pro Titel. Für die nächste Folge erzeugt die App eine neue Instanz.
+    // Once per title. The app creates a new instance for the next episode.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fortschritt alle 10 Sekunden melden.
+  // Report progress every 10 seconds.
   useEffect(() => {
     const timer = setInterval(() => {
       const current = report();
@@ -222,7 +231,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     return () => clearInterval(timer);
   }, [client, incognito, report]);
 
-  // Optional in den Vollbildmodus und beim Verlassen zurück.
+  // Optionally enter full screen, and leave it again on exit.
   useEffect(() => {
     if (external || !settings.fullscreenPlayback) return;
     let entered = false;
@@ -238,13 +247,13 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ---------- Untertitel ---------- */
+  /* ---------- Subtitles ---------- */
 
   useEffect(() => {
     if (session) engine.current?.setSubtitle(session.source, subtitleIndex);
   }, [session, subtitleIndex]);
 
-  /* ---------- Aktionen ---------- */
+  /* ---------- Actions ---------- */
 
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const wake = useCallback(() => {
@@ -286,7 +295,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     setEnded(false);
   }, []);
 
-  // Sammelt Sprünge zuerst als Vorschau, damit schnelles Tippen nur einmal nachlädt.
+  // Collects skips as a preview first, so quick presses only reload once.
   const scrubTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const nudge = useCallback((delta: number) => {
     const base = state.current.scrub ?? state.current.time;
@@ -338,7 +347,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     const stream = session?.source.MediaStreams?.find((s) => s.Type === 'Subtitle' && s.Index === index);
     const currentlyBurned = session?.source.MediaStreams?.find((s) => s.Type === 'Subtitle' && s.Index === subtitleIndex && !s.IsTextSubtitleStream);
     if ((stream && !stream.IsTextSubtitleStream) || currentlyBurned) {
-      // Bilduntertitel brennt der Server ein. Dafür muss der Stream neu gestartet werden.
+      // The server burns in image subtitles, which needs a restart of the stream.
       void load({ startSeconds: engine.current?.position() ?? time, audioIndex, subtitleIndex: index });
     } else {
       setSubtitleIndex(index);
@@ -362,15 +371,15 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     if (activeSegment) seekTo((activeSegment.EndTicks ?? 0) / TICKS_PER_SECOND);
   }, [activeSegment, seekTo]);
 
-  // Automatisch überspringen, aber jedes Segment nur einmal: Wer zurückspult, will es sehen.
+  // Skip automatically, but each segment only once: whoever seeks back wants to see it.
   useEffect(() => {
-    // Beim Start erst warten, bis der Film läuft: Ein früherer Sprung geht im Player verloren.
+    // At the start, wait until playback runs: an earlier seek gets lost in the player.
     if (buffering || !activeSegment || segmentActions[activeSegment.Type as SegmentKind] !== 'skip') return;
     const key = String(activeSegment.StartTicks);
     if (skippedSegments.current.has(key)) return;
     skippedSegments.current.add(key);
     seekTo((activeSegment.EndTicks ?? 0) / TICKS_PER_SECOND);
-    setNotice(SEGMENT_LABELS[activeSegment.Type ?? ''].replace('überspringen', 'übersprungen'));
+    setNotice(t(SEGMENT_DONE[activeSegment.Type ?? '']));
   }, [activeSegment, buffering, seekTo, segmentActions]);
 
   useEffect(() => {
@@ -384,7 +393,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
   const inCredits = creditsSegment ? time >= (creditsSegment.StartTicks ?? 0) / TICKS_PER_SECOND : false;
   const showUpNext = Boolean(nextEpisode) && !upNextDismissed && duration > 0 && (ended || inCredits || remaining < UP_NEXT_SECONDS);
 
-  // Wiedergabeende: nächste Folge starten oder zurück zur Übersicht.
+  // End of playback: start the next episode or go back.
   useEffect(() => {
     if (!ended) return;
     if (nextEpisode && settings.autoplayNext && !upNextDismissed) {
@@ -395,7 +404,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     return undefined;
   }, [ended, nextEpisode, playNext, pop, settings.autoplayNext, upNextDismissed]);
 
-  /* ---------- Fernbedienungslogik ---------- */
+  /* ---------- Remote control ---------- */
 
   useEffect(() => pushInterceptor((command) => {
     const s = state.current;
@@ -409,7 +418,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
       return false;
     }
 
-    // Eigene Tasten der Fernbedienung wirken immer, auch bei offenem Menü.
+    // Dedicated remote keys always work, even with a menu open.
     if (command === 'play') {
       engine.current?.play();
       wake();
@@ -438,7 +447,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
         togglePlay();
         return true;
       }
-      return false; // Die Pfeile bewegen den Fokus innerhalb des Menüs.
+      return false; // The arrows move the focus inside the menu.
     }
 
     if (command === 'back') {
@@ -503,12 +512,12 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     engine.current?.setSpeed(speed);
   }, [speed, session]);
 
-  // Bei mpv setzt die Startoption die Lautstärke.
+  // With mpv, the start option sets the volume.
   useEffect(() => {
     if (!external && video.current) video.current.volume = Math.max(0, Math.min(1, volume / 100));
   }, [external, session, volume]);
 
-  // Medientasten auf der Tastatur und das Windows-Overlay.
+  // Media keys on the keyboard and the Windows overlay.
   useEffect(() => {
     if (!mediaKeys || !('mediaSession' in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -527,14 +536,14 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     };
   }, [initialItem, mediaKeys, nudge, seekBack, seekForward]);
 
-  /* ---------- Tastenkürzel (nur mit Tastatur, die Fernbedienung hat eigene Tasten) ---------- */
+  /* ---------- Keyboard shortcuts (keyboard only; the remote has its own keys) ---------- */
 
   const hotkeyActions = useRef<Record<HotkeyAction, () => void>>(null!);
   hotkeyActions.current = {
     mute: () => {
       loudness.current.muted = !loudness.current.muted;
       engine.current?.setMuted(loudness.current.muted);
-      setNotice(loudness.current.muted ? 'Ton aus' : 'Ton an');
+      setNotice(loudness.current.muted ? t('Sound off') : t('Sound on'));
     },
     volumeUp: () => changeVolume(5),
     volumeDown: () => changeVolume(-5),
@@ -554,12 +563,12 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     const next = Math.max(0, Math.min(130, loudness.current.volume + delta));
     loudness.current.volume = next;
     engine.current?.setVolume(next);
-    setNotice(`Lautstärke ${next} %`);
+    setNotice(t('Volume {value} %', { value: next }));
   };
   const changeSpeed = (delta: number) => {
     const next = Math.max(0.25, Math.min(4, speed + delta));
     setSpeed(next);
-    setNotice(`Tempo ${next.toLocaleString('de-DE')}×`);
+    setNotice(t('Speed {value}×', { value: next.toLocaleString(locale()) }));
   };
 
   useEffect(() => {
@@ -576,7 +585,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     return () => window.removeEventListener('keydown', onKey);
   }, [hotkeys]);
 
-  /* ---------- Maus auf dem Bild ---------- */
+  /* ---------- Mouse on the picture ---------- */
 
   const surfaceHandlers = {
     onClick: () => {
@@ -598,7 +607,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
       boost.current.timer = setTimeout(() => {
         boost.current.active = true;
         engine.current?.setSpeed(speedBoost);
-        setNotice(`Tempo ${speedBoost.toLocaleString('de-DE')}×`);
+        setNotice(t('Speed {value}×', { value: speedBoost.toLocaleString(locale()) }));
       }, 400);
     },
     onPointerUp: () => endBoost(),
@@ -613,7 +622,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     setNotice('');
   };
 
-  /* ---------- Bildschirmschoner ---------- */
+  /* ---------- Screensaver ---------- */
 
   useEffect(() => {
     if (screensaver === 'off' || !paused || error) {
@@ -636,11 +645,11 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     };
   }, [error, paused, screensaver]);
 
-  // Uhr oder Logo wandern, damit sich auf OLED-Fernsehern nichts einbrennt.
+  // Clock or logo move around so nothing burns into OLED screens.
   useEffect(() => {
     if (!saver) return undefined;
     const update = () => {
-      setClock(new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }));
+      setClock(new Date().toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }));
       setSaverSpot({ x: 20 + Math.random() * 60, y: 20 + Math.random() * 60 });
     };
     update();
@@ -648,7 +657,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     return () => clearInterval(timer);
   }, [saver]);
 
-  /* ---------- Unterbrechungen ---------- */
+  /* ---------- Interruptions ---------- */
 
   const retry = () => {
     const position = engine.current?.position() ?? 0;
@@ -659,29 +668,29 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
     if (error) {
       root.current?.querySelector<HTMLElement>('.player-error [data-autofocus]')?.focus({ preventScroll: true });
     } else if (bar.current && (!document.activeElement || document.activeElement === document.body)) {
-      // Der Knopf "Neu laden" ist weg: Die Bedienung geht auf der Zeitleiste weiter.
+      // The "Reload" button is gone: control continues on the timeline.
       focusElement(bar.current, false);
     }
   }, [error]);
 
-  // Lädt das Video gar nicht weiter, hängt der Stream. Pausiert darf es beliebig lange warten.
+  // If the video stops loading, the stream hangs. While paused it may wait as long as it likes.
   useEffect(() => {
     if (!buffering || error || paused) return undefined;
     const timer = setTimeout(() => {
-      setError('Der Server liefert das Video gerade nicht.');
+      setError(t('The server is not delivering the video right now.'));
       setBuffering(false);
     }, STALL_LIMIT_MS);
     return () => clearTimeout(timer);
   }, [buffering, error, paused]);
 
-  /* ---------- Maus auf der Zeitleiste ---------- */
+  /* ---------- Mouse on the timeline ---------- */
 
   const barTime = (event: MouseEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     return Math.max(0, Math.min((event.clientX - rect.left) / rect.width, 1)) * duration;
   };
 
-  /* ---------- Darstellung ---------- */
+  /* ---------- Rendering ---------- */
 
   const previewTime = scrub ?? hoverTime;
   const shownTime = scrub ?? time;
@@ -725,15 +734,15 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
         </div>
       )}
 
-      {buffering && !error && <div className="player-spinner" role="status" aria-label="Lädt"><span /></div>}
+      {buffering && !error && <div className="player-spinner" role="status" aria-label={t('Loading')}><span /></div>}
 
       {error && (
         <div className="player-error" role="alert" data-focus-scope>
-          <h2>Wiedergabe nicht möglich</h2>
+          <h2>{t('Playback not possible')}</h2>
           <p>{error}</p>
           <div className="offline-actions">
-            <button type="button" className="btn btn-primary" data-focusable data-autofocus onClick={retry}>Neu laden</button>
-            <button type="button" className="btn btn-glass" data-focusable onClick={pop}>Zurück</button>
+            <button type="button" className="btn btn-primary" data-focusable data-autofocus onClick={retry}>{t('Reload')}</button>
+            <button type="button" className="btn btn-glass" data-focusable onClick={pop}>{t('Back')}</button>
           </div>
         </div>
       )}
@@ -750,10 +759,10 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
               {subtitleTracks.length > 0 && (
                 <div className="menu-anchor">
                   {menu === 'subtitles' && (
-                    <div className="player-menu" data-focus-scope role="menu" aria-label="Untertitel">
-                      <div className="menu-title">Untertitel</div>
+                    <div className="player-menu" data-focus-scope role="menu" aria-label={t('Subtitles')}>
+                      <div className="menu-title">{t('Subtitles')}</div>
                       <button type="button" className="menu-item" role="menuitemradio" aria-checked={subtitleIndex === -1} data-focusable data-autofocus={subtitleIndex === -1 ? '' : undefined} onClick={() => chooseSubtitle(-1)}>
-                        <span className="menu-check">{subtitleIndex === -1 && <CheckIcon />}</span>Aus
+                        <span className="menu-check">{subtitleIndex === -1 && <CheckIcon />}</span>{t('Off')}
                       </button>
                       {subtitleTracks.map((track) => (
                         <button key={track.Index} type="button" className="menu-item" role="menuitemradio" aria-checked={subtitleIndex === track.Index} data-focusable data-autofocus={subtitleIndex === track.Index ? '' : undefined} onClick={() => chooseSubtitle(track.Index!)}>
@@ -762,14 +771,14 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
                       ))}
                     </div>
                   )}
-                  <button type="button" className={`round-btn ${menu === 'subtitles' ? 'open' : ''}`} data-focusable data-menu-button="subtitles" aria-label="Untertitel" aria-expanded={menu === 'subtitles'} onClick={() => setMenu(menu === 'subtitles' ? null : 'subtitles')}><SubtitlesIcon /></button>
+                  <button type="button" className={`round-btn ${menu === 'subtitles' ? 'open' : ''}`} data-focusable data-menu-button="subtitles" aria-label={t('Subtitles')} aria-expanded={menu === 'subtitles'} onClick={() => setMenu(menu === 'subtitles' ? null : 'subtitles')}><SubtitlesIcon /></button>
                 </div>
               )}
               {audioTracks.length > 0 && (
                 <div className="menu-anchor">
                   {menu === 'audio' && (
-                    <div className="player-menu" data-focus-scope role="menu" aria-label="Tonspur">
-                      <div className="menu-title">Tonspur</div>
+                    <div className="player-menu" data-focus-scope role="menu" aria-label={t('Audio track')}>
+                      <div className="menu-title">{t('Audio track')}</div>
                       {audioTracks.map((track) => (
                         <button key={track.Index} type="button" className="menu-item" role="menuitemradio" aria-checked={audioIndex === track.Index} data-focusable data-autofocus={audioIndex === track.Index ? '' : undefined} onClick={() => chooseAudio(track)}>
                           <span className="menu-check">{audioIndex === track.Index && <CheckIcon />}</span>{trackLabel(track)}
@@ -778,24 +787,24 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
                       {audioOutput && <div className="menu-note" data-audio-output>{audioOutput}</div>}
                     </div>
                   )}
-                  <button type="button" className={`round-btn ${menu === 'audio' ? 'open' : ''}`} data-focusable data-menu-button="audio" aria-label="Tonspur" aria-expanded={menu === 'audio'} onClick={() => setMenu(menu === 'audio' ? null : 'audio')}><AudioIcon /></button>
+                  <button type="button" className={`round-btn ${menu === 'audio' ? 'open' : ''}`} data-focusable data-menu-button="audio" aria-label={t('Audio track')} aria-expanded={menu === 'audio'} onClick={() => setMenu(menu === 'audio' ? null : 'audio')}><AudioIcon /></button>
                 </div>
               )}
               <div className="menu-anchor">
                 {menu === 'speed' && (
-                  <div className="player-menu" data-focus-scope role="menu" aria-label="Geschwindigkeit">
-                    <div className="menu-title">Geschwindigkeit</div>
+                  <div className="player-menu" data-focus-scope role="menu" aria-label={t('Speed')}>
+                    <div className="menu-title">{t('Speed')}</div>
                     {SPEEDS.map((value) => (
                       <button key={value} type="button" className="menu-item" role="menuitemradio" aria-checked={speed === value} data-focusable data-autofocus={speed === value ? '' : undefined} onClick={() => { setSpeed(value); closeMenu('speed'); }}>
-                        <span className="menu-check">{speed === value && <CheckIcon />}</span>{value === 1 ? 'Normal' : `${value.toLocaleString('de-DE')}×`}
+                        <span className="menu-check">{speed === value && <CheckIcon />}</span>{value === 1 ? 'Normal' : `${value.toLocaleString(locale())}×`}
                       </button>
                     ))}
                   </div>
                 )}
-                <button type="button" className={`round-btn ${menu === 'speed' ? 'open' : ''}`} data-focusable data-menu-button="speed" aria-label="Geschwindigkeit" aria-expanded={menu === 'speed'} onClick={() => setMenu(menu === 'speed' ? null : 'speed')}><SpeedIcon /></button>
+                <button type="button" className={`round-btn ${menu === 'speed' ? 'open' : ''}`} data-focusable data-menu-button="speed" aria-label={t('Speed')} aria-expanded={menu === 'speed'} onClick={() => setMenu(menu === 'speed' ? null : 'speed')}><SpeedIcon /></button>
               </div>
               {nextEpisode && (
-                <button type="button" className="round-btn" data-focusable aria-label="Nächste Folge" onClick={playNext}><NextIcon /></button>
+                <button type="button" className="round-btn" data-focusable aria-label={t('Next episode')} onClick={playNext}><NextIcon /></button>
               )}
             </div>
           </div>
@@ -805,7 +814,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
             ref={bar}
             tabIndex={0}
             role="slider"
-            aria-label="Wiedergabeposition"
+            aria-label={t('Playback position')}
             aria-valuemin={0}
             aria-valuemax={Math.round(duration)}
             aria-valuenow={Math.round(shownTime)}
@@ -830,7 +839,7 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
 
           <div className="player-times">
             <span className="player-state">{paused ? <PauseIcon /> : <PlayIcon />}{formatClock(shownTime)}</span>
-            <span className="player-ends">{duration > 0 ? `Endet um ${formatEndTime(remaining / speed)}` : ''}</span>
+            <span className="player-ends">{duration > 0 ? t('Ends at {time}', { time: formatEndTime(remaining / speed) }) : ''}</span>
             <span>-{formatClock(Math.max(0, duration - shownTime))}</span>
           </div>
         </div>
@@ -838,21 +847,21 @@ export function PlayerScreen({ item: initialItem, startTicks, external = false }
 
       {activeSegment && !showUpNext && (
         <button type="button" className="skip-button" data-focusable data-skip-button onClick={skipSegment}>
-          {SEGMENT_LABELS[activeSegment.Type ?? '']}
+          {t(SEGMENT_LABELS[activeSegment.Type ?? ''])}
         </button>
       )}
 
       {showUpNext && nextEpisode && (
-        <div className="up-next" role="group" aria-label="Als Nächstes">
+        <div className="up-next" role="group" aria-label={t('Up next')}>
           <button type="button" className="up-next-card" data-focusable onClick={playNext}>
             {nextThumb && <img src={client.imageUrl(nextThumb, 480)} alt="" />}
             <span className="up-next-play"><PlayIcon /></span>
           </button>
           <div className="up-next-text">
-            <div className="up-next-label">Als Nächstes</div>
+            <div className="up-next-label">{t('Up next')}</div>
             <div className="up-next-title">{nextEpisode.Name}</div>
             <div className="up-next-sub">{episodeLabel(nextEpisode)}</div>
-            <button type="button" className="link-btn" data-focusable onClick={() => setUpNextDismissed(true)}>Abspann ansehen</button>
+            <button type="button" className="link-btn" data-focusable onClick={() => setUpNextDismissed(true)}>{t('Watch credits')}</button>
           </div>
         </div>
       )}

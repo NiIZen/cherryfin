@@ -1,4 +1,4 @@
-// Kleiner Testserver mit der Jellyfin-Schnittstelle, den die Tests gezielt ausfallen lassen können.
+// Small test server with the Jellyfin interface that the tests can make fail on purpose.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,23 +10,23 @@ function item(id, name, type, extra = {}) {
 }
 
 const ITEMS = [
-  item('direct', 'Direkter Film', 'Movie', { ParentId: 'lib1' }),
-  item('hls', 'HLS Film', 'Movie', { ParentId: 'lib1', UserData: { Key: 'hls', Played: false, IsFavorite: false, PlaybackPositionTicks: 30 * TICKS, PlayedPercentage: 25 } }),
-  item('mkv', 'MKV Film', 'Movie', { ParentId: 'lib1' }),
-  item('doc', 'Doku Film', 'Movie', { ParentId: 'lib2', Genres: ['Dokumentation'] }),
-  item('serie', 'Testserie', 'Series', { ParentId: 'lib3' }),
+  item('direct', 'Direct Movie', 'Movie', { ParentId: 'lib1' }),
+  item('hls', 'HLS Movie', 'Movie', { ParentId: 'lib1', UserData: { Key: 'hls', Played: false, IsFavorite: false, PlaybackPositionTicks: 30 * TICKS, PlayedPercentage: 25 } }),
+  item('mkv', 'MKV Movie', 'Movie', { ParentId: 'lib1' }),
+  item('doc', 'Documentary Movie', 'Movie', { ParentId: 'lib2', Genres: ['Documentary'] }),
+  item('serie', 'Test Show', 'Series', { ParentId: 'lib3' }),
 ];
 
 const VIEWS = [
-  { Id: 'lib1', Name: 'Filme', Type: 'CollectionFolder', CollectionType: 'movies' },
-  { Id: 'lib2', Name: 'Dokumentationen', Type: 'CollectionFolder', CollectionType: 'movies' },
-  { Id: 'lib3', Name: 'Serien', Type: 'CollectionFolder', CollectionType: 'tvshows' },
-  { Id: 'lib4', Name: 'Musik', Type: 'CollectionFolder', CollectionType: 'music' },
+  { Id: 'lib1', Name: 'Movies', Type: 'CollectionFolder', CollectionType: 'movies' },
+  { Id: 'lib2', Name: 'Documentaries', Type: 'CollectionFolder', CollectionType: 'movies' },
+  { Id: 'lib3', Name: 'Shows', Type: 'CollectionFolder', CollectionType: 'tvshows' },
+  { Id: 'lib4', Name: 'Music', Type: 'CollectionFolder', CollectionType: 'music' },
 ];
 
 const USER = { Id: 'u1', Name: 'Tester', HasPassword: true };
 export const TEST_USER = 'tester';
-export const TEST_PASSWORD = 'nur-fuer-den-testserver';
+export const TEST_PASSWORD = 'only-for-the-test-server';
 
 const TYPES = { '.m3u8': 'application/vnd.apple.mpegurl', '.ts': 'video/mp2t', '.mp4': 'video/mp4', '.m4s': 'video/iso.segment' };
 
@@ -39,7 +39,7 @@ export function startMockServer({ videoFile, hlsDir, mkvFile }) {
     const base = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*' };
 
     if (state.mode === 'down') return req.socket.destroy();
-    if (state.mode === 'hang') return undefined; // Keine Antwort, wie bei einem abgestürzten Dienst.
+    if (state.mode === 'hang') return undefined; // No answer, like a crashed service.
     if (req.method === 'OPTIONS') { res.writeHead(204, base); return res.end(); }
 
     let raw = '';
@@ -51,9 +51,9 @@ export function startMockServer({ videoFile, hlsDir, mkvFile }) {
       const none = () => { res.writeHead(204, base); res.end(); };
       const body = raw ? JSON.parse(raw) : {};
 
-      if (route === '/System/Info/Public') return json({ Id: 'mock', ServerName: 'Testserver', Version: '10.11.0' });
+      if (route === '/System/Info/Public') return json({ Id: 'mock', ServerName: 'Test server', Version: '10.11.0' });
 
-      // Ab hier nur mit Anmeldung. Der Modus 401 simuliert ein abgelaufenes Token.
+      // From here on only with sign-in. Mode 401 simulates an expired token.
       if (route === '/Users/Public') return json([]);
       if (route === '/Users/AuthenticateByName') {
         if (body.Username !== TEST_USER || body.Pw !== TEST_PASSWORD) return json({}, 401);
@@ -101,11 +101,11 @@ export function startMockServer({ videoFile, hlsDir, mkvFile }) {
               DefaultSubtitleStreamIndex: -1,
               MediaStreams: [
                 { Index: 0, Type: 'Video', Codec: 'h264', Width: 1280, Height: 720 },
-                { Index: 1, Type: 'Audio', Codec: 'ac3', Language: 'deu', Channels: 6, DisplayTitle: 'Deutsch – Dolby Digital 5.1' },
-                { Index: 2, Type: 'Audio', Codec: 'eac3', Language: 'eng', Channels: 6, DisplayTitle: 'Englisch – Dolby Digital+ 5.1' },
-                { Index: 3, Type: 'Audio', Codec: 'truehd', Language: 'eng', Channels: 6, DisplayTitle: 'Englisch – TrueHD 5.1' },
-                { Index: 4, Type: 'Audio', Codec: 'dts', Language: 'fra', Channels: 6, DisplayTitle: 'Französisch – DTS 5.1' },
-                { Index: 5, Type: 'Subtitle', Codec: 'subrip', Language: 'deu', IsTextSubtitleStream: true, DisplayTitle: 'Deutsch' },
+                { Index: 1, Type: 'Audio', Codec: 'ac3', Language: 'deu', Channels: 6, DisplayTitle: 'German – Dolby Digital 5.1' },
+                { Index: 2, Type: 'Audio', Codec: 'eac3', Language: 'eng', Channels: 6, DisplayTitle: 'English – Dolby Digital+ 5.1' },
+                { Index: 3, Type: 'Audio', Codec: 'truehd', Language: 'eng', Channels: 6, DisplayTitle: 'English – TrueHD 5.1' },
+                { Index: 4, Type: 'Audio', Codec: 'dts', Language: 'fra', Channels: 6, DisplayTitle: 'French – DTS 5.1' },
+                { Index: 5, Type: 'Subtitle', Codec: 'subrip', Language: 'deu', IsTextSubtitleStream: true, DisplayTitle: 'German' },
               ],
             }],
           });
@@ -124,7 +124,7 @@ export function startMockServer({ videoFile, hlsDir, mkvFile }) {
             DefaultSubtitleStreamIndex: -1,
             MediaStreams: [
               { Index: 0, Type: 'Video', Codec: 'h264', Width: 1280, Height: 720 },
-              { Index: 1, Type: 'Audio', Codec: 'aac', Language: 'deu', Channels: 2, DisplayTitle: 'Deutsch – AAC Stereo' },
+              { Index: 1, Type: 'Audio', Codec: 'aac', Language: 'deu', Channels: 2, DisplayTitle: 'German – AAC Stereo' },
             ],
           }],
         });

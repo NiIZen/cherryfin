@@ -1,5 +1,5 @@
-// Baut aus dist-webos das IPK-Paket und das Manifest für den Homebrew Channel.
-// Aufruf: node scripts/package-webos.mjs [--source https://github.com/name/repo] [--icon https://.../icon160.png]
+// Builds the IPK package and the Homebrew Channel manifest from dist-webos.
+// Usage: node scripts/package-webos.mjs [--source https://github.com/name/repo] [--icon https://.../icon160.png]
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -26,7 +26,7 @@ const ipkName = `${appinfo.id}_${appinfo.version}_all.ipk`;
 const ipk = path.join(out, ipkName);
 const data = readFileSync(ipk);
 
-// Größe und Prüfsumme gelten nur für genau dieses Paket: Jede Version braucht ein neues Manifest.
+// Size and checksum only apply to this exact package: every version needs a new manifest.
 const manifest = {
   id: appinfo.id,
   version: appinfo.version,
@@ -42,4 +42,4 @@ const manifest = {
 };
 writeFileSync(path.join(out, `${appinfo.id}.manifest.json`), `${JSON.stringify(manifest, null, 2)}\n`);
 copyFileSync(path.join(root, 'webos', 'icon160.png'), path.join(out, 'icon160.png'));
-console.log(`Fertig: ${ipkName} (${(manifest.ipkSize / 1024 / 1024).toFixed(1)} MB), Prüfsumme ${manifest.ipkHash.sha256}`);
+console.log(`Done: ${ipkName} (${(manifest.ipkSize / 1024 / 1024).toFixed(1)} MB), checksum ${manifest.ipkHash.sha256}`);

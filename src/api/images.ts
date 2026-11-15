@@ -1,6 +1,6 @@
 import type { ImageRef, Item } from './types';
 
-/** Eigenes Bild des Eintrags oder das geerbte Bild von Staffel oder Serie. */
+/** The item’s own image, or the one inherited from the season or show. */
 export function backdropRef(item: Item): ImageRef | null {
   if (item.BackdropImageTags?.length) return { itemId: item.Id!, type: 'Backdrop', tag: item.BackdropImageTags[0], index: 0 };
   if (item.ParentBackdropItemId && item.ParentBackdropImageTags?.length) {
@@ -15,7 +15,7 @@ export function logoRef(item: Item): ImageRef | null {
   return null;
 }
 
-/** Hochformat, bei Episoden das Plakat der Serie. */
+/** Portrait; for episodes the show’s poster. */
 export function posterRef(item: Item): ImageRef | null {
   if (item.Type === 'Episode' && item.SeriesId && item.SeriesPrimaryImageTag) {
     return { itemId: item.SeriesId, type: 'Primary', tag: item.SeriesPrimaryImageTag };
@@ -24,7 +24,7 @@ export function posterRef(item: Item): ImageRef | null {
   return backdropRef(item);
 }
 
-/** Querformat: Episodenbild, Thumb oder Backdrop, zuletzt das Primary-Bild. */
+/** Landscape: episode image, thumb or backdrop, finally the primary image. */
 export function landscapeRef(item: Item): ImageRef | null {
   if (item.Type === 'Episode' && item.ImageTags?.Primary) return { itemId: item.Id!, type: 'Primary', tag: item.ImageTags.Primary };
   if (item.ImageTags?.Thumb) return { itemId: item.Id!, type: 'Thumb', tag: item.ImageTags.Thumb };

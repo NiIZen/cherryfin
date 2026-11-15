@@ -5,6 +5,7 @@ import type { HomeRowId } from '../app/settings';
 import { Hero } from '../ui/Hero';
 import { RetryMessage } from '../ui/RetryMessage';
 import { Row } from '../ui/Row';
+import { t } from '../i18n';
 
 interface HomeData {
   resume: Item[];
@@ -30,14 +31,14 @@ export function HomeScreen() {
       const resume = heroSource === 'nextup' ? [] : await client.getResume(7).catch(() => []);
       const next = heroSource === 'continue' ? [] : await client.getNextUp(7, undefined, nextUpDays).catch(() => []);
       const items = mergeContinue(resume, next).slice(0, 7);
-      // Ist noch nichts angefangen, bleibt der Bereich nicht leer.
+      // If nothing has been started yet, the header still shows something.
       return items.length ? { items, total: items.length } : fresh();
     },
     [client, heroEnabled, heroSource, nextUpDays],
   );
 
   const rows = useData<HomeData>(async () => {
-    // Eine einzelne fehlende Reihe stört nicht. Scheitert alles, zeigt die Seite eine Meldung.
+    // A single missing row does not matter. If everything fails, the page shows a message.
     let failures = 0;
     const settled = async <T,>(promise: Promise<T>, fallback: T): Promise<T> => {
       try {
@@ -74,25 +75,25 @@ export function HomeScreen() {
       case 'continue':
         if (continueMode === 'separate') {
           return [
-            <Row key="resume" title="Weiter ansehen" items={data?.resume} onSelect={(item) => play(item)} />,
-            <Row key="nextup" title="Nächste Folgen" items={data?.nextUp} onSelect={(item) => play(item)} />,
+            <Row key="resume" title={t('Continue watching')} items={data?.resume} onSelect={(item) => play(item)} />,
+            <Row key="nextup" title={t('Next up')} items={data?.nextUp} onSelect={(item) => play(item)} />,
           ];
         }
-        if (continueMode === 'resume') return <Row key={id} title="Weiter ansehen" items={data?.resume} onSelect={(item) => play(item)} />;
-        if (continueMode === 'nextup') return <Row key={id} title="Nächste Folgen" items={data?.nextUp} onSelect={(item) => play(item)} />;
-        return <Row key={id} title="Weiter ansehen" items={data ? mergeContinue(data.resume, data.nextUp) : undefined} onSelect={(item) => play(item)} />;
+        if (continueMode === 'resume') return <Row key={id} title={t('Continue watching')} items={data?.resume} onSelect={(item) => play(item)} />;
+        if (continueMode === 'nextup') return <Row key={id} title={t('Next up')} items={data?.nextUp} onSelect={(item) => play(item)} />;
+        return <Row key={id} title={t('Continue watching')} items={data ? mergeContinue(data.resume, data.nextUp) : undefined} onSelect={(item) => play(item)} />;
       case 'movies':
-        return <Row key={id} title="Neue Filme" items={data?.movies} variant={posterOr('poster')} more={{ title: 'Alle Filme', query: { includeItemTypes: ['Movie'], sortBy: ['SortName'] } }} />;
+        return <Row key={id} title={t('New movies')} items={data?.movies} variant={posterOr('poster')} more={{ title: t('All movies'), query: { includeItemTypes: ['Movie'], sortBy: ['SortName'] } }} />;
       case 'series':
-        return <Row key={id} title="Neue Serien" items={data?.series} variant={posterOr('landscape')} more={{ title: 'Alle Serien', query: { includeItemTypes: ['Series'], sortBy: ['SortName'] } }} />;
+        return <Row key={id} title={t('New shows')} items={data?.series} variant={posterOr('landscape')} more={{ title: t('All shows'), query: { includeItemTypes: ['Series'], sortBy: ['SortName'] } }} />;
       case 'recommendations':
         return data?.recommendations.map((group) => (
-          <Row key={`${group.RecommendationType}-${group.CategoryId}`} title={`Weil du „${group.BaselineItemName}“ gesehen hast`} items={group.Items ?? []} variant={posterOr('poster')} />
+          <Row key={`${group.RecommendationType}-${group.CategoryId}`} title={t('Because you watched “{name}”', { name: group.BaselineItemName ?? '' })} items={group.Items ?? []} variant={posterOr('poster')} />
         ));
       case 'favorites':
-        return <Row key={id} title="Meine Merkliste" items={data?.favorites} variant={posterOr('poster')} />;
+        return <Row key={id} title={t('My list')} items={data?.favorites} variant={posterOr('poster')} />;
       case 'libraries':
-        return <Row key={id} title="Mediatheken" items={data?.views} />;
+        return <Row key={id} title={t('Libraries')} items={data?.views} />;
       default:
         return null;
     }
@@ -101,8 +102,8 @@ export function HomeScreen() {
   return (
     <div className="page" data-vscroll ref={page}>
       {showHero && <Hero items={hero.data!.items} autoFocus />}
-      {failed && <RetryMessage title="Laden fehlgeschlagen" message="Die Startseite konnte nicht geladen werden." />}
-      {empty && !failed && <RetryMessage title="Noch nichts zu sehen" message="Auf diesem Server gibt es noch keine Filme oder Serien." />}
+      {failed && <RetryMessage title={t('Loading failed')} message={t('The home screen could not be loaded.')} />}
+      {empty && !failed && <RetryMessage title={t('Nothing to see yet')} message={t('There are no movies or shows on this server yet.')} />}
       <div className={showHero ? 'rows rows-overlap' : 'rows rows-plain'}>
         {rowPrefs.filter((row) => row.enabled).map((row) => renderRow(row.id))}
       </div>

@@ -4,6 +4,7 @@ import { useApp } from '../app/context';
 import { animateScroll } from '../focus/engine';
 import { Card, MoreCard, type CardVariant } from './Card';
 import { ChevronLeft, ChevronRight, GridIcon } from './Icons';
+import { t } from '../i18n';
 
 export function RowFrame({ title, children, className }: { title?: string; children: ReactNode; className?: string }) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -26,7 +27,7 @@ export function RowFrame({ title, children, className }: { title?: string; child
     return () => observer.disconnect();
   }, [measure, children]);
 
-  // Die Pfeile sind nur für die Maus da. Tastatur und Gamepad scrollen über den Fokus.
+  // The arrows are for the mouse only. Keyboard and gamepad scroll through the focus.
   const page = (direction: 1 | -1) => {
     const el = scroller.current;
     if (!el) return;
@@ -38,11 +39,11 @@ export function RowFrame({ title, children, className }: { title?: string; child
     <section className={`row ${className ?? ''}`} data-section="row">
       {title && <h2 className="row-title">{title}</h2>}
       <div className="row-viewport">
-        {canScroll.left && <button type="button" className="row-arrow left" tabIndex={-1} aria-label="Zurück blättern" onClick={() => page(-1)}><ChevronLeft /></button>}
+        {canScroll.left && <button type="button" className="row-arrow left" tabIndex={-1} aria-label={t('Scroll back')} onClick={() => page(-1)}><ChevronLeft /></button>}
         <div className="row-scroller" ref={scroller} data-hscroll data-focus-group onScroll={measure}>
           {children}
         </div>
-        {canScroll.right && <button type="button" className="row-arrow right" tabIndex={-1} aria-label="Weiter blättern" onClick={() => page(1)}><ChevronRight /></button>}
+        {canScroll.right && <button type="button" className="row-arrow right" tabIndex={-1} aria-label={t('Scroll forward')} onClick={() => page(1)}><ChevronRight /></button>}
       </div>
     </section>
   );
@@ -65,7 +66,7 @@ export function Row({ title, items, variant = 'landscape', onSelect, more }: Row
       {more && (
         <MoreCard
           variant={variant}
-          label="Alle anzeigen"
+          label={t('Show all')}
           icon={<GridIcon />}
           onSelect={() => push({ kind: 'grid', title: more.title, query: more.query, variant })}
         />

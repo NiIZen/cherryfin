@@ -1,4 +1,5 @@
 import type { Item, Source, Stream, TrickplayInfo } from '../api/types';
+import { locale, t } from '../i18n';
 
 export const TICKS_PER_SECOND = 10_000_000;
 
@@ -6,8 +7,8 @@ export function formatRuntime(ticks?: number | null): string {
   if (!ticks) return '';
   const minutes = Math.round(ticks / TICKS_PER_SECOND / 60);
   const hours = Math.floor(minutes / 60);
-  if (hours === 0) return `${minutes} Min.`;
-  return minutes % 60 ? `${hours} Std. ${minutes % 60} Min.` : `${hours} Std.`;
+  if (hours === 0) return t('{minutes} min', { minutes });
+  return minutes % 60 ? t('{hours} h {minutes} min', { hours, minutes: minutes % 60 }) : t('{hours} h', { hours });
 }
 
 export function formatClock(seconds: number): string {
@@ -21,7 +22,7 @@ export function formatClock(seconds: number): string {
 
 export function formatEndTime(secondsLeft: number, now = new Date()): string {
   const end = new Date(now.getTime() + secondsLeft * 1000);
-  return end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return end.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 export function episodeLabel(item: Item): string {
@@ -29,23 +30,23 @@ export function episodeLabel(item: Item): string {
   const season = item.ParentIndexNumber;
   const episode = item.IndexNumber;
   if (season == null && episode == null) return '';
-  return [season != null ? `S${season}` : '', episode != null ? `F${episode}` : ''].filter(Boolean).join(', ');
+  return [season != null ? `S${season}` : '', episode != null ? t('E{number}', { number: episode }) : ''].filter(Boolean).join(', ');
 }
 
 export function typeLabel(item: Item): string {
   switch (item.Type) {
-    case 'Movie': return 'Film';
-    case 'Series': return 'Serie';
-    case 'Episode': return 'Folge';
-    case 'BoxSet': return 'Sammlung';
-    case 'Season': return 'Staffel';
+    case 'Movie': return t('Movie');
+    case 'Series': return t('Show');
+    case 'Episode': return t('Episode');
+    case 'BoxSet': return t('Collection');
+    case 'Season': return t('Season');
     case 'Video': return 'Video';
-    case 'MusicVideo': return 'Musikvideo';
+    case 'MusicVideo': return t('Music video');
     default: return '';
   }
 }
 
-/** Metadatenzeile wie "Film · 2024 · Drama · 2 Std. 8 Min." */
+/** Metadata line such as "Movie · 2024 · Drama · 2 h 8 min" */
 export function metaLine(item: Item): string {
   const parts: string[] = [];
   const type = typeLabel(item);
@@ -53,7 +54,7 @@ export function metaLine(item: Item): string {
   if (item.ProductionYear) parts.push(String(item.ProductionYear));
   if (item.Genres?.length) parts.push(item.Genres.slice(0, 2).join(', '));
   if (item.Type === 'Series') {
-    if (item.ChildCount) parts.push(item.ChildCount === 1 ? '1 Staffel' : `${item.ChildCount} Staffeln`);
+    if (item.ChildCount) parts.push(item.ChildCount === 1 ? t('1 season') : t('{count} seasons', { count: item.ChildCount ?? 0 }));
   } else {
     const runtime = formatRuntime(item.RunTimeTicks);
     if (runtime) parts.push(runtime);
@@ -61,7 +62,7 @@ export function metaLine(item: Item): string {
   return parts.join(' · ');
 }
 
-/** Technik-Plaketten wie auf einer Apple-TV-Detailseite, aus den echten Stream-Daten abgeleitet. */
+/** Technical badges like on an Apple TV detail page, derived from the real stream data. */
 export function mediaBadges(item: Item): string[] {
   const badges: string[] = [];
   if (item.OfficialRating) badges.push(item.OfficialRating);
@@ -85,7 +86,7 @@ export function mediaBadges(item: Item): string[] {
 }
 
 export function trackLabel(stream: Stream): string {
-  return stream.DisplayTitle || stream.Title || stream.Language || `Spur ${stream.Index}`;
+  return stream.DisplayTitle || stream.Title || stream.Language || t('Track {index}', { index: stream.Index ?? 0 });
 }
 
 export function streamsOf(source: Source | undefined, type: 'Audio' | 'Subtitle'): Stream[] {
@@ -98,7 +99,7 @@ export interface TrickplayTile {
   row: number;
 }
 
-/** Findet in den Vorschau-Kacheln von Jellyfin das Bild zu einer Zeitposition. */
+/** Finds the image for a time position in Jellyfin’s preview tiles. */
 export function trickplayTile(info: TrickplayInfo, seconds: number): TrickplayTile {
   const interval = info.Interval || 10_000;
   const tileWidth = info.TileWidth || 10;

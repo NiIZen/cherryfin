@@ -1,7 +1,7 @@
 {
   "name": "cherryfin-e2e",
   "private": true,
-  "description": "Fenstertests für Cherryfin mit Playwright und einem Jellyfin-Testserver",
+  "description": "Window tests for Cherryfin with Playwright and a Jellyfin test server",
   "dependencies": {
     "playwright-core": "^1.65.0"
   }

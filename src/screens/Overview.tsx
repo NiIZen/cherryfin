@@ -11,6 +11,7 @@ import { Hero } from '../ui/Hero';
 import { CheckIcon, SlidersIcon } from '../ui/Icons';
 import { RetryMessage } from '../ui/RetryMessage';
 import { LibraryPrefRows, SORT_LABELS } from '../ui/SettingRows';
+import { locale, t } from '../i18n';
 
 const PAGE_SIZE = 500;
 const POSTER_WIDTHS = [9.5, 11.5, 13.5, 16, 19];
@@ -46,7 +47,7 @@ function ListEntry({ item, index, height, onSelect }: { item: Item; index: numbe
 interface OverviewProps {
   title: string;
   scope: ItemQuery;
-  /** Mit Bereichs-ID bleiben Anpassungen gespeichert, sonst gelten sie nur für diese Ansicht. */
+  /** With a section ID, adjustments are saved; otherwise they only apply to this view. */
   tabId?: string;
   autoFocus?: boolean;
   initial?: Partial<LibraryPrefs>;
@@ -73,7 +74,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
     }
   };
 
-  /* ---------- Daten: alles seitenweise nachladen, die Anzeige beginnt schon mit der ersten Seite ---------- */
+  /* ---------- Data: load everything page by page; display starts with the first page ---------- */
 
   const [items, setItems] = useState<Item[]>([]);
   const [total, setTotal] = useState(0);
@@ -104,7 +105,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
         if (!alive) return;
         collected.push(...result.items);
         setTotal(result.total);
-        // Beim Aktualisieren erst am Ende tauschen, damit die Liste nicht kurz schrumpft.
+        // When refreshing, swap only at the end so the list does not shrink for a moment.
         if (!isRefresh) setItems([...collected]);
         if (start === 0 && !isRefresh) setLoaded(true);
         if (!result.items.length || collected.length >= result.total) break;
@@ -121,16 +122,16 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
     return () => {
       alive = false;
     };
-    // scope ist über scopeKey abgedeckt.
+    // scope is covered by scopeKey.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, scopeKey, prefs.sort, prefs.descending, prefs.unwatched, dataVersion]);
 
-  // Neue Sortierung beginnt oben.
+  // A new sort order starts at the top.
   useEffect(() => {
     if (page.current) page.current.scrollTop = 0;
   }, [prefs.sort, prefs.descending, prefs.unwatched]);
 
-  /* ---------- Layout: Es werden nur die sichtbaren Reihen gerendert ---------- */
+  /* ---------- Layout: only the visible rows are rendered ---------- */
 
   const grid = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ width: 0, rem: 16 });
@@ -139,7 +140,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
     const el = grid.current;
     if (!el) return undefined;
     const measure = () => {
-      // Ein ausgeblendeter Bereich misst 0. Dann bleibt das letzte Layout erhalten.
+      // A hidden section measures 0. The last layout is kept then.
       if (!el.clientWidth) return;
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
       setBox((old) => (old.width === el.clientWidth && old.rem === rem ? old : { width: el.clientWidth, rem }));
@@ -188,7 +189,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
 
   useLayoutEffect(updateRange, [updateRange]);
 
-  // Die fokussierte Reihe bleibt immer im DOM, auch wenn das Scrollen beim Halten der Taste hinterherläuft.
+  // The focused row always stays in the DOM, even when scrolling lags behind a held key.
   const rendered = useMemo(() => {
     const set = new Set<number>();
     for (let i = range[0]; i <= range[1] && i < rows.length; i++) set.add(i);
@@ -199,15 +200,15 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
     return [...set].sort((a, b) => a - b).map((i) => rows[i]);
   }, [range, rows, focusIndex]);
 
-  // Nach einer Layoutänderung (Fenstergröße, Spaltenzahl) den Fokus auf denselben Titel zurücksetzen.
+  // After a layout change (window size, column count), put the focus back on the same title.
   useLayoutEffect(() => {
     if (focusIndex === null || document.activeElement !== document.body) return;
     grid.current?.querySelector<HTMLElement>(`[data-index="${focusIndex}"]`)?.focus({ preventScroll: true });
-    // Nur bei neuem Layout.
+    // Only on a new layout.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
 
-  /* ---------- A–Z-Leiste ---------- */
+  /* ---------- A–Z bar ---------- */
 
   const isAlpha = prefs.sort === 'SortName';
   const showRail = isAlpha && prefs.rail && items.length > 0;
@@ -220,7 +221,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
     const el = grid.current;
     if (index === undefined || !scroller || !el) return;
     const row = rows[rowOfItem(rows, index)];
-    // Liegt eine Überschrift direkt davor, soll sie mit ins Bild.
+    // If a heading sits right before it, bring it into view too.
     const above = rows.find((candidate) => candidate.kind === 'header' && candidate.start === index);
     const top = (above ?? row).top;
     const gridTop = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
@@ -244,7 +245,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
     }
   }, [focusIndex, rendered]);
 
-  /* ---------- Ansicht-Menü ---------- */
+  /* ---------- View menu ---------- */
 
   const [panel, setPanel] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -269,7 +270,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
   useEffect(() => {
     if (!autoFocus || !loaded || !page.current) return undefined;
     return focusWhenReady(grid.current?.querySelector('[data-focusable]') ? grid.current : page.current);
-    // Nur beim ersten Laden.
+    // Only on the first load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFocus, loaded, box.width]);
 
@@ -288,7 +289,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
         <header className={`overview-head ${prefs.hero && hero.data?.length ? 'after-hero' : ''}`} data-section="top">
           <div className="overview-title">
             <h1>{title}</h1>
-            {loaded && <span>{total === 1 ? '1 Titel' : `${total.toLocaleString('de-DE')} Titel`}</span>}
+            {loaded && <span>{total === 1 ? t('1 title') : t('{count} titles', { count: total.toLocaleString(locale()) })}</span>}
           </div>
           <div className="pill-row" data-focus-group>
             {sortKeys.map((key) => (
@@ -299,7 +300,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
                 data-focusable
                 aria-pressed={prefs.sort === key}
                 onClick={() => {
-                  // Nochmal drücken dreht die Richtung um. Eine neue Sortierung startet sinnvoll: A–Z aufsteigend, sonst das Neueste zuerst.
+                  // Pressing again reverses the direction. A new sort starts sensibly: A–Z ascending, otherwise newest first.
                   if (prefs.sort === key) setPref('descending', !prefs.descending);
                   else if (tabId) updateSettings({ libraryOverrides: { ...settings.libraryOverrides, [tabId]: { ...settings.libraryOverrides[tabId], sort: key, descending: key !== 'SortName' } } });
                   else setLocal((current) => ({ ...current, sort: key, descending: key !== 'SortName' }));
@@ -310,17 +311,17 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
             ))}
             <span className="pill-divider" />
             <button type="button" className={`pill ${prefs.unwatched ? 'selected' : ''}`} data-focusable aria-pressed={prefs.unwatched} onClick={() => setPref('unwatched', !prefs.unwatched)}>
-              Ungesehen
+              {t('Unwatched')}
             </button>
             <span className="pill-divider" />
             <button type="button" className="pill pill-icon" ref={panelButton} data-focusable data-view-button aria-expanded={panel} onClick={() => setPanel(true)}>
-              <SlidersIcon /> Ansicht
+              <SlidersIcon /> {t('View')}
             </button>
           </div>
         </header>
 
-        {error && <RetryMessage title="Laden fehlgeschlagen" message={error} />}
-        {loaded && !error && items.length === 0 && <div className="screen-message"><p>Hier gibt es nichts zu sehen.</p></div>}
+        {error && <RetryMessage title={t('Loading failed')} message={error} />}
+        {loaded && !error && items.length === 0 && <div className="screen-message"><p>{t('Nothing to see here.')}</p></div>}
 
         <div
           className={`vgrid ${isList ? 'vgrid-list' : ''}`}
@@ -354,7 +355,7 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
       </div>
 
       {showRail && (
-        <nav className="alpha-rail" aria-label="Zu Buchstabe springen" data-focus-group>
+        <nav className="alpha-rail" aria-label={t('Jump to letter')} data-focus-group>
           {ALPHABET.map((letter) => {
             const available = starts.has(letter);
             return (
@@ -380,13 +381,13 @@ export function Overview({ title, scope, tabId, autoFocus, initial }: OverviewPr
       {panel && (
         <>
           <div className="view-panel-backdrop" onClick={closePanel} />
-          <aside className="view-panel" ref={panelRef} data-focus-scope role="dialog" aria-label={`Ansicht: ${title}`}>
-            <h2>Ansicht</h2>
-            <p>{tabId ? `Gilt nur für „${title}“.` : 'Gilt nur für diese Liste.'}</p>
+          <aside className="view-panel" ref={panelRef} data-focus-scope role="dialog" aria-label={`${t('View')}: ${title}`}>
+            <h2>{t('View')}</h2>
+            <p>{tabId ? t('Only applies to “{name}”.', { name: title }) : t('Only applies to this list.')}</p>
             <LibraryPrefRows prefs={prefs} onChange={setPref} />
             {hasOwnPrefs && (
               <button type="button" className="list-row danger" data-focusable onClick={resetPrefs}>
-                <span className="list-row-title">Auf Standard zurücksetzen</span>
+                <span className="list-row-title">{t('Reset to default')}</span>
               </button>
             )}
           </aside>

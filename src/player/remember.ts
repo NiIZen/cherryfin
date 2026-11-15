@@ -4,7 +4,7 @@ const KEY = 'jellytv.tracks';
 
 export interface RememberedTracks {
   audio?: string;
-  /** Sprache der Untertitel oder "off", wenn sie zuletzt ausgeschaltet waren. */
+  /** Subtitle language, or "off" if they were turned off last time. */
   subtitle?: string;
 }
 
@@ -20,11 +20,11 @@ export function rememberTrack(kind: keyof RememberedTracks, value: string) {
   try {
     localStorage.setItem(KEY, JSON.stringify({ ...loadRemembered(), [kind]: value }));
   } catch {
-    /* Ohne Speicher gilt die Wahl nur für diesen Film. */
+    /* Without storage the choice only applies to this title. */
   }
 }
 
-/** Sucht die gemerkte Sprache in den Spuren eines Films. Ohne Treffer bleibt es beim Vorschlag des Servers. */
+/** Looks for the remembered language in a title’s tracks. Without a match, the server’s choice stays. */
 export function pickRemembered(streams: Stream[], type: 'Audio' | 'Subtitle', language: string | undefined, fallback: number | undefined): number | undefined {
   if (!language) return fallback;
   if (type === 'Subtitle' && language === 'off') return -1;
@@ -32,7 +32,7 @@ export function pickRemembered(streams: Stream[], type: 'Audio' | 'Subtitle', la
   return match?.Index ?? fallback;
 }
 
-/** Heimnetz oder Internet? Private Adressen und lokale Namen zählen als Heimnetz. */
+/** Home network or internet? Private addresses and local names count as home network. */
 export function isLocalServer(url: string): boolean {
   let host: string;
   try {

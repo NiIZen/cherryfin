@@ -16,10 +16,10 @@ export type NewRoute =
 
 export interface AppContextValue {
   client: MediaClient;
-  /** Steigt, wenn sich Wiedergabestand oder Favoriten geändert haben. Reihen laden dann neu. */
+  /** Increases when playback state or favorites changed. Rows reload then. */
   dataVersion: number;
   bumpData: () => void;
-  /** Steigt bei "Neu laden": Alle Screens holen ihre Daten erneut. */
+  /** Increases on "Reload": all screens fetch their data again. */
   reloadEpoch: number;
   reload: () => void;
   push: (route: NewRoute) => void;
@@ -36,11 +36,11 @@ export const AppContext = createContext<AppContextValue | null>(null);
 
 export function useApp(): AppContextValue {
   const value = useContext(AppContext);
-  if (!value) throw new Error('useApp außerhalb der App verwendet');
+  if (!value) throw new Error('useApp used outside the app');
   return value;
 }
 
-/** Lädt Daten und behält beim Aktualisieren die alten, damit Reihen nicht flackern und der Fokus bleibt. */
+/** Loads data and keeps the old data while refreshing, so rows do not flicker and the focus stays. */
 export function useData<T>(load: () => Promise<T>, deps: DependencyList) {
   const epoch = useContext(AppContext)?.reloadEpoch ?? 0;
   const [state, setState] = useState<{ data?: T; error?: Error; loading: boolean }>({ loading: true });
@@ -54,20 +54,20 @@ export function useData<T>(load: () => Promise<T>, deps: DependencyList) {
     return () => {
       alive = false;
     };
-    // Die Abhängigkeiten übergibt der Aufrufer.
+    // The caller passes the dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, epoch]);
   return state;
 }
 
-/** Setzt den ersten Fokus, sobald der Inhalt eines Screens bereit ist. */
+/** Sets the first focus as soon as the content of a screen is ready. */
 export function useInitialFocus(ready: boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const done = useRef(false);
   const epoch = useContext(AppContext)?.reloadEpoch ?? 0;
   useEffect(() => {
     if (!ready || !ref.current || !ref.current.checkVisibility()) return undefined;
-    // Nach einem erneuten Laden nur fokussieren, wenn gerade nichts den Fokus hat.
+    // After a reload, only focus if nothing has the focus right now.
     const nothingFocused = !document.activeElement || document.activeElement === document.body;
     if (done.current && !nothingFocused) return undefined;
     done.current = true;

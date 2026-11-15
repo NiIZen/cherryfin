@@ -1,4 +1,4 @@
-// Prüft die Wiedergabe mit mpv im echten Fensteraufbau: Video unten, Oberfläche transparent darüber.
+// Checks playback with mpv in the real window setup: video below, transparent interface on top.
 import { _electron as electron } from 'playwright-core';
 import path from 'node:path';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -26,7 +26,7 @@ const problems = [];
 const launch = async (env = {}) => {
   app = await electron.launch({
     executablePath: process.env.TEST_EXE || path.join(project, 'node_modules/electron/dist/electron.exe'),
-    args: process.env.TEST_EXE ? [`--user-data-dir=${userData}`] : [project, `--user-data-dir=${userData}`],
+    args: process.env.TEST_EXE ? ['--lang=en-US', `--user-data-dir=${userData}`] : [project, '--lang=en-US', `--user-data-dir=${userData}`],
     cwd: project,
     env: { ...process.env, CHERRYFIN_MPV_LOG: logFile, ...env },
   });
@@ -39,8 +39,8 @@ const sameBox = (a, b) => a && b && ['x', 'y', 'width', 'height'].every((k) => M
 const mpvRunning = () => execFileSync('tasklist', ['/FI', 'IMAGENAME eq mpv.exe', '/NH']).toString().includes('mpv.exe');
 
 /**
- * Erfasst ausschließlich die Fenster von JellyTV über ihre Fenster-ID, niemals den Bildschirm.
- * Liegt das Fenster nicht vorne, kommt trotzdem nur sein eigener Inhalt zurück.
+ * Captures only the app’s own windows by their window ID, never the screen.
+ * Even when the window is not in front, only its own content comes back.
  */
 const capture = async (name) => {
   const data = await app.evaluate(async ({ BrowserWindow, desktopCapturer }) => {
@@ -60,7 +60,7 @@ const capture = async (name) => {
       alphaCenter: alphaAt(0.5, 0.35),
     };
   });
-  // Video und Oberfläche werden in einer Zeichenfläche übereinandergelegt, wie das Auge sie sieht.
+  // Video and interface are layered on one canvas, as the eye sees them.
   const merged = await page.evaluate(async ({ video, ui }) => {
     const load = (src) => new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = src; });
     const top = await load(ui);
@@ -95,7 +95,7 @@ const verifiedScreenshot = async (p, name) => {
       document.body.appendChild(mark);
     }
   });
-  // Das Bild des ganzen Bildschirms bleibt im Hauptprozess. Heraus kommt nur der Ausschnitt des Players.
+  // The image of the whole screen stays in the main process. Only the player’s section comes out.
   let png;
   try {
     png = await app.evaluate(async ({ BrowserWindow, desktopCapturer, screen }) => {
@@ -144,7 +144,7 @@ const verifiedScreenshot = async (p, name) => {
     for (let i = 0; i < sample.length; i += 400) sum += sample[i] + sample[i + 1] + sample[i + 2];
     return { verified: true, bright: sum / (sample.length / 400) / 3 };
   }, `data:image/png;base64,${png}`);
-  // Nur mit allen Markierungen ist sicher, dass ausschließlich der Player im Bild ist.
+  // Only with all markers is it certain that nothing but the player is in the image.
   if (result.verified) writeFileSync(path.join(shots, `${name}.png`), Buffer.from(png, 'base64'));
   return result;
 };
@@ -155,7 +155,7 @@ const overlayPage = async () => {
     if (found) return found;
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw new Error('Kein Player-Fenster');
+  throw new Error('No player window');
 };
 const playerTime = (p) => p.evaluate(() => Number(document.querySelector('[role=slider]')?.getAttribute('aria-valuenow') ?? -1));
 const waitTime = async (p, min, timeout = 15000) => {
@@ -176,7 +176,7 @@ const audioNote = async (p) => {
 };
 
 try {
-  /* ---------- Anmeldung, Einstellungen wie bei dir: Passthrough an ---------- */
+  /* ---------- Sign-in, settings with passthrough on ---------- */
   await launch({ CHERRYFIN_MPV_AO: 'null' });
   await page.waitForSelector('.connect-panel');
   await page.evaluate(() => localStorage.setItem('jellytv.settings', JSON.stringify({
@@ -191,23 +191,23 @@ try {
   await page.keyboard.press('Enter');
   await page.waitForSelector('[data-tab-page="home"] .hero');
   await wait(500);
-  await page.click('.tabbar [aria-label="Filme"]');
+  await page.click('.tabbar [aria-label=\"Movies\"]');
   await page.waitForSelector('[data-tab-page="lib1"] .vrow');
   await wait(300);
 
-  /* ---------- MKV direkt, Fensteraufbau ---------- */
-  const p = await startItem('MKV Film');
+  /* ---------- MKV directly, window setup ---------- */
+  const p = await startItem('MKV Movie');
   p.on('pageerror', (e) => problems.push(`Player: ${e.message}`));
   await p.waitForSelector('.player.external', { timeout: 10000 });
   await waitTime(p, 1, 20000);
-  check('MKV läuft in mpv', true, `${await playerTime(p)} s`);
-  check('Server hat MKV direkt erlaubt', mock.state.playback.at(-1).DeviceProfile.DirectPlayProfiles[0].Container === undefined);
-  check('Es wird nichts transkodiert', mock.state.sessions.some((s) => s.route === '/Sessions/Playing' && s.PlayMethod === 'DirectPlay'));
+  check('MKV plays in mpv', true, `${await playerTime(p)} s`);
+  check('Server allowed MKV directly', mock.state.playback.at(-1).DeviceProfile.DirectPlayProfiles[0].Container === undefined);
+  check('Nothing is transcoded', mock.state.sessions.some((s) => s.route === '/Sessions/Playing' && s.PlayMethod === 'DirectPlay'));
   const win = await app.evaluate(({ BaseWindow }) => BaseWindow.getAllWindows().map((w) => ({ visible: w.isVisible(), child: Boolean(w.getParentWindow()), b: w.getBounds() })));
   const host = win.find((w) => w.visible && !w.child);
   const over = win.find((w) => w.child);
-  check('Hauptfenster ist ausgeblendet, Video und Oberfläche sichtbar', win.filter((w) => w.visible).length === 2);
-  check('Oberfläche liegt genau über dem Video', sameBox(host?.b, over?.b), JSON.stringify(over?.b));
+  check('Main window is hidden, video and interface visible', win.filter((w) => w.visible).length === 2);
+  check('Interface lies exactly above the video', sameBox(host?.b, over?.b), JSON.stringify(over?.b));
   await p.mouse.move(400, 200);
   await p.mouse.move(500, 250);
   await p.waitForSelector('.player.show-overlay');
@@ -216,16 +216,16 @@ try {
   await p.waitForSelector('.player.hide-overlay', { timeout: 8000 });
   await wait(500);
   const clean = await capture('71-mpv-clean');
-  check('Oberfläche ist über dem Video durchsichtig', clean.alphaCenter === 0, `Alpha ${clean.alphaCenter}`);
+  check('Interface is transparent above the video', clean.alphaCenter === 0, `Alpha ${clean.alphaCenter}`);
   const shot = await verifiedScreenshot(p, '71-mpv-clean');
-  check('Aufnahme zeigt nur den Player', shot.verified, JSON.stringify(shot.marks ?? ''));
-  check('mpv zeigt wirklich Bild unter der Oberfläche', shot.verified && shot.bright > 5, `Helligkeit ${shot.bright?.toFixed(1)}`);
+  check('Capture shows only the player', shot.verified, JSON.stringify(shot.marks ?? ''));
+  check('mpv really shows a picture below the interface', shot.verified && shot.bright > 5, `Helligkeit ${shot.bright?.toFixed(1)}`);
 
-  /* ---------- Passthrough je Format, ohne Neuladen ---------- */
+  /* ---------- Passthrough per format, without reloading ---------- */
   const requests = mock.state.playback.length;
   await p.mouse.move(505, 255);
   let note = await audioNote(p);
-  check('AC3 geht als Passthrough raus', note === 'Passthrough: Dolby Digital', note);
+  check('AC3 goes out as passthrough', note === 'Passthrough: Dolby Digital', note);
   await p.mouse.move(500, 250);
   await wait(200);
   await verifiedScreenshot(p, '72-mpv-audio-menu');
@@ -237,16 +237,16 @@ try {
     note = await audioNote(p);
     check(`${title}: Spur gewechselt, Passthrough aktiv`, note === expected, note);
   }
-  check('Spurwechsel braucht keinen neuen Stream vom Server', mock.state.playback.length === requests);
+  check('Switching tracks needs no new stream from the server', mock.state.playback.length === requests);
   await p.keyboard.press('Escape');
   await wait(300);
 
-  /* ---------- Untertitel, Bedienung ---------- */
+  /* ---------- Subtitles, controls ---------- */
   await p.mouse.move(500, 260);
   await p.click('[data-menu-button="subtitles"]');
-  await p.click('.menu-item:has-text("Deutsch")');
+  await p.click('.menu-item:has-text(\"German\")');
   await wait(500);
-  check('Untertitel aus der Datei brauchen keinen neuen Stream', mock.state.playback.length === requests);
+  check('Subtitles from the file need no new stream', mock.state.playback.length === requests);
 
   const before = await playerTime(p);
   await p.locator('[role=slider]').focus();
@@ -254,20 +254,20 @@ try {
   await p.keyboard.press('ArrowRight');
   await p.keyboard.press('ArrowRight');
   await p.waitForFunction((b) => Number(document.querySelector('[role=slider]').getAttribute('aria-valuenow')) >= b + 25, before, { timeout: 6000 });
-  check('Pfeiltasten springen vor', true, `${before} -> ${await playerTime(p)} s`);
+  check('Arrow keys skip forward', true, `${before} -> ${await playerTime(p)} s`);
   await wait(1200);
 
   await p.keyboard.press(' ');
   await wait(500);
   const t1 = await playerTime(p);
-  check('Leertaste pausiert', await p.locator('.player-state .icon').count() === 1);
+  check('Space pauses', await p.locator('.player-state .icon').count() === 1);
   await wait(1500);
-  check('Zeit steht in der Pause still', await playerTime(p) === t1, `${t1} s`);
+  check('Time stands still while paused', await playerTime(p) === t1, `${t1} s`);
   await p.keyboard.press(' ');
   await p.waitForFunction((b) => Number(document.querySelector('[role=slider]').getAttribute('aria-valuenow')) > b, t1, { timeout: 5000 });
-  check('Leertaste setzt fort', true);
+  check('Space resumes', true);
 
-  /* ---------- Vollbild ---------- */
+  /* ---------- Full screen ---------- */
   await p.keyboard.press('f');
   await wait(1200);
   const full = await app.evaluate(({ BrowserWindow, screen }) => {
@@ -276,48 +276,48 @@ try {
     const video = top.getParentWindow();
     return { fullscreen: video.isFullScreen(), over: top.getBounds(), video: video.getBounds(), display: screen.getDisplayMatching(video.getBounds()).bounds };
   });
-  check('F schaltet Vollbild, Oberfläche deckt das Video', full.fullscreen && sameBox(full.over, full.video) && sameBox(full.video, full.display), JSON.stringify(full));
+  check('F toggles full screen, interface covers the video', full.fullscreen && sameBox(full.over, full.video) && sameBox(full.video, full.display), JSON.stringify(full));
   const inFull = await verifiedScreenshot(p, '75-mpv-fullscreen');
-  check('Im Vollbild bleibt das Bild sichtbar', inFull.verified && inFull.bright > 5, `Helligkeit ${inFull.bright?.toFixed(1)}`);
+  check('The picture stays visible in full screen', inFull.verified && inFull.bright > 5, `Helligkeit ${inFull.bright?.toFixed(1)}`);
   await p.keyboard.press('f');
   await wait(1000);
   const afterFull = await verifiedScreenshot(p, '76-mpv-after-fullscreen');
-  check('Nach dem Vollbild bleibt das Bild sichtbar', afterFull.verified && afterFull.bright > 5, `Helligkeit ${afterFull.bright?.toFixed(1)}`);
+  check('The picture stays visible after full screen', afterFull.verified && afterFull.bright > 5, `Helligkeit ${afterFull.bright?.toFixed(1)}`);
   const leftFull = await app.evaluate(({ BrowserWindow }) => {
     const top = BrowserWindow.getAllWindows().find((w) => w.getParentWindow());
     const a = top.getBounds(); const b = top.getParentWindow().getBounds(); return { full: top.getParentWindow().isFullScreen(), same: ['x', 'y', 'width', 'height'].every((k) => Math.abs(a[k] - b[k]) <= 2), a, b };
   });
-  check('Zurück aus dem Vollbild', !leftFull.full && leftFull.same, JSON.stringify(leftFull));
+  check('Back from full screen', !leftFull.full && leftFull.same, JSON.stringify(leftFull));
 
-  /* ---------- Absturz von mpv ---------- */
+  /* ---------- mpv crash ---------- */
   execFileSync('taskkill', ['/F', '/IM', 'mpv.exe']);
   await p.waitForSelector('.player-error', { timeout: 8000 });
-  check('Absturz zeigt eine Meldung mit Neu laden', (await p.textContent('.player-error')).includes('Neu laden'));
+  check('A crash shows a message with Reload', (await p.textContent('.player-error')).includes('Reload'));
   const crashedAt = await playerTime(p);
   await p.click('.player-error .btn-primary');
   await p.waitForSelector('.player-error', { state: 'detached', timeout: 8000 });
   await waitTime(p, crashedAt + 1, 15000);
-  check('Neu laden startet mpv wieder an derselben Stelle', true, `${crashedAt} -> ${await playerTime(p)} s`);
+  check('Reload restarts mpv at the same position', true, `${crashedAt} -> ${await playerTime(p)} s`);
 
-  /* ---------- Beenden ---------- */
+  /* ---------- Exit ---------- */
   await p.mouse.move(505, 250);
   await wait(300);
   await p.click('.back-btn');
   await page.waitForFunction(() => document.visibilityState === 'visible', null, { timeout: 5000 }).catch(() => undefined);
   await new Promise((r) => setTimeout(r, 2200));
   const after = await app.evaluate(({ BaseWindow }) => BaseWindow.getAllWindows().map((w) => ({ visible: w.isVisible(), child: Boolean(w.getParentWindow()) })));
-  check('Zurück: Hauptfenster wieder da, Player-Fenster weg', after.length === 1 && after[0].visible);
-  check('mpv ist beendet', !mpvRunning());
-  check('Stand wird dem Server gemeldet', mock.state.sessions.some((s) => s.route === '/Sessions/Playing/Stopped' && s.PositionTicks > 0));
-  check('Fokus liegt wieder auf der Detailseite', await page.evaluate(() => Boolean(document.activeElement?.closest('.detail'))));
+  check('Back: main window returns, player window gone', after.length === 1 && after[0].visible);
+  check('mpv has exited', !mpvRunning());
+  check('Position is reported to the server', mock.state.sessions.some((s) => s.route === '/Sessions/Playing/Stopped' && s.PositionTicks > 0));
+  check('Focus is back on the detail page', await page.evaluate(() => Boolean(document.activeElement?.closest('.detail'))));
   await page.keyboard.press('Escape');
   await wait(500);
 
-  /* ---------- HLS, wenn der Server umwandeln muss ---------- */
-  const h = await startItem('HLS Film');
+  /* ---------- HLS when the server has to convert ---------- */
+  const h = await startItem('HLS Movie');
   await waitTime(h, 30, 20000);
   const hlsT = await playerTime(h);
-  check('mpv spielt HLS am Fortsetzungspunkt', hlsT >= 30 && hlsT < 50, `${hlsT} s`);
+  check('mpv plays HLS at the resume point', hlsT >= 30 && hlsT < 50, `${hlsT} s`);
   await h.mouse.move(505, 250);
   await wait(300);
   await h.click('.back-btn');
@@ -325,29 +325,29 @@ try {
   await page.keyboard.press('Escape');
   await wait(400);
 
-  /* ---------- Einstellungen ---------- */
+  /* ---------- Settings ---------- */
   await page.mouse.move(600, 20);
   await wait(450);
-  await page.click('.tabbar [aria-label="Einstellungen"]');
+  await page.click('.tabbar [aria-label=\"Settings\"]');
   await wait(300);
   await page.click('[data-category="playback"]');
   await wait(800);
   await page.evaluate(() => document.querySelector('.settings-list').scrollIntoView());
   await page.screenshot({ path: path.join(shots, '74-audio-settings.png') });
-  const devices = await page.textContent('[data-setting="Ausgabegerät"]');
-  check('Ausgabegerät steht zur Auswahl', devices.includes('Automatisch'), devices);
-  check('Passthrough ist an, Formate stehen zur Auswahl', await page.locator('[data-setting="Dolby TrueHD"]').count() === 1);
-  await page.click('[data-setting="Passthrough an den Receiver"]');
+  const devices = await page.textContent('[data-setting=\"Output device\"]');
+  check('Output device can be chosen', devices.includes('Automatic'), devices);
+  check('Passthrough is on, formats can be chosen', await page.locator('[data-setting="Dolby TrueHD"]').count() === 1);
+  await page.click('[data-setting=\"Passthrough to the receiver\"]');
   await wait(200);
-  check('Aus: Formate verschwinden', await page.locator('[data-setting="Dolby TrueHD"]').count() === 0);
-  await page.click('[data-setting="Wiedergabe mit"]');
+  check('Off: formats disappear', await page.locator('[data-setting="Dolby TrueHD"]').count() === 0);
+  await page.click('[data-setting=\"Play with\"]');
   await wait(200);
-  check('Eingebauter Player wählbar: Hinweis auf Grenze', (await page.textContent('.settings-note.below')).includes('kein Passthrough'));
-  await page.click('[data-setting="Wiedergabe mit"]');
+  check('Built-in player selectable: note on its limit', (await page.textContent('.settings-note.below')).includes('cannot do passthrough'));
+  await page.click('[data-setting=\"Play with\"]');
   await wait(200);
   await app.close();
 
-  /* ---------- Echtes Audiogerät: stille Datei, PCM ---------- */
+  /* ---------- Real audio device: silent file, PCM ---------- */
   await launch();
   await page.waitForSelector('.tabbar', { timeout: 15000 });
   await page.evaluate(() => {
@@ -357,14 +357,14 @@ try {
   });
   await page.waitForSelector('.tabbar', { timeout: 15000 });
   await wait(600);
-  await page.click('.tabbar [aria-label="Filme"]');
+  await page.click('.tabbar [aria-label=\"Movies\"]');
   await page.waitForSelector('[data-tab-page="lib1"] .vrow');
   await wait(300);
-  const r = await startItem('MKV Film');
+  const r = await startItem('MKV Movie');
   await waitTime(r, 1, 20000);
   await r.mouse.move(505, 255);
   const real = await audioNote(r);
-  check('Echtes Gerät: mpv dekodiert und gibt PCM aus', real.startsWith('PCM'), real);
+  check('Real device: mpv decodes and outputs PCM', real.startsWith('PCM'), real);
   await r.keyboard.press('Escape');
   await wait(200);
   await r.mouse.move(500, 250);
@@ -372,17 +372,17 @@ try {
   await r.click('.back-btn');
   await new Promise((res) => setTimeout(res, 1500));
 } catch (error) {
-  check('Durchlauf', false, error.message.split('\n').slice(0, 3).join(' | '));
+  check('Run', false, error.message.split('\n').slice(0, 3).join(' | '));
 } finally {
   console.log(problems.length ? `\nFehler:\n${[...new Set(problems)].join('\n')}` : '\nKeine Seitenfehler.');
-  console.log(`\n${results.filter(Boolean).length}/${results.length} bestanden`);
+  console.log(`\n${results.filter(Boolean).length}/${results.length} passed`);
   await app?.close().catch(() => undefined);
   mock.close();
   try {
     const log = (await import('node:fs')).readFileSync(logFile, 'utf8');
     const lines = log.split('\n').filter((l) => /\[e\]|\[w\]|spdif|Error parsing/i.test(l)).slice(0, 12);
-    if (lines.length) console.log('\nAus dem mpv-Protokoll:\n' + lines.join('\n'));
-  } catch { /* Kein Protokoll vorhanden. */ }
+    if (lines.length) console.log('\nFrom the mpv log:\n' + lines.join('\n'));
+  } catch { /* No log available. */ }
   if (mpvRunning()) execFileSync('taskkill', ['/F', '/IM', 'mpv.exe']);
   rmSync(userData, { recursive: true, force: true });
 }

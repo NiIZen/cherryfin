@@ -1,4 +1,4 @@
-// Spielt die Testdatei mit verschiedenen Einstellungen auf dem echten Audiogerät und misst, ob die Zeit läuft.
+// Plays the test file with different settings on the real audio device and measures whether the time runs.
 import { _electron as electron } from 'playwright-core';
 import path from 'node:path';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -12,16 +12,16 @@ const logFile = path.join(userData, 'mpv.log');
 
 const FORMATS = ['ac3', 'eac3', 'dts', 'dts-hd', 'truehd'];
 const cases = [
-  { name: 'Fenster, PCM', fullscreen: false, audio: { mode: 'pcm', formats: FORMATS, exclusive: false, device: 'auto' } },
-  { name: 'Vollbild, PCM (Standard)', fullscreen: true, audio: { mode: 'pcm', formats: FORMATS, exclusive: false, device: 'auto' } },
-  { name: 'Fenster, PCM, exklusiv', fullscreen: false, audio: { mode: 'pcm', formats: FORMATS, exclusive: true, device: 'auto' } },
-  { name: 'Fenster, Passthrough, exklusiv', fullscreen: false, audio: { mode: 'passthrough', formats: FORMATS, exclusive: true, device: 'auto' } },
-  { name: 'Fenster, Passthrough, nicht exklusiv', fullscreen: false, audio: { mode: 'passthrough', formats: FORMATS, exclusive: false, device: 'auto' } },
+  { name: 'Window, PCM', fullscreen: false, audio: { mode: 'pcm', formats: FORMATS, exclusive: false, device: 'auto' } },
+  { name: 'Full screen, PCM (default)', fullscreen: true, audio: { mode: 'pcm', formats: FORMATS, exclusive: false, device: 'auto' } },
+  { name: 'Window, PCM, exclusive', fullscreen: false, audio: { mode: 'pcm', formats: FORMATS, exclusive: true, device: 'auto' } },
+  { name: 'Window, passthrough, exclusive', fullscreen: false, audio: { mode: 'passthrough', formats: FORMATS, exclusive: true, device: 'auto' } },
+  { name: 'Window, passthrough, not exclusive', fullscreen: false, audio: { mode: 'passthrough', formats: FORMATS, exclusive: false, device: 'auto' } },
 ];
 
 const app = await electron.launch({
   executablePath: process.env.TEST_EXE || path.join(project, 'node_modules/electron/dist/electron.exe'),
-  args: process.env.TEST_EXE ? [`--user-data-dir=${userData}`] : [project, `--user-data-dir=${userData}`],
+  args: process.env.TEST_EXE ? ['--lang=en-US', `--user-data-dir=${userData}`] : [project, '--lang=en-US', `--user-data-dir=${userData}`],
   cwd: project,
   env: { ...process.env, CHERRYFIN_MPV_LOG: logFile },
 });
@@ -41,7 +41,7 @@ const overlayPage = async () => {
     if (found) return found;
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw new Error('Kein Player-Fenster');
+  throw new Error('No player window');
 };
 
 for (const test of (process.env.REPEAT ? Array(Number(process.env.REPEAT)).fill(cases[0]) : process.env.ONLY ? cases.slice(0, Number(process.env.ONLY)) : cases)) {
@@ -52,13 +52,13 @@ for (const test of (process.env.REPEAT ? Array(Number(process.env.REPEAT)).fill(
   await page.waitForTimeout(800);
   await page.waitForSelector('.tabbar');
   await page.waitForTimeout(700);
-  await page.click('.tabbar [aria-label="Filme"]');
-  await page.waitForSelector('[data-tab-page="lib1"] .card[aria-label="MKV Film"]');
+  await page.click('.tabbar [aria-label=\"Movies\"]');
+  await page.waitForSelector('[data-tab-page=\"lib1\"] .card[aria-label=\"MKV Movie\"]');
   await page.waitForTimeout(300);
-  await page.click('[data-tab-page="lib1"] .card[aria-label="MKV Film"]');
+  await page.click('[data-tab-page=\"lib1\"] .card[aria-label=\"MKV Movie\"]');
   await page.waitForSelector('.route:not([hidden]) .btn-play');
   await page.waitForTimeout(1200);
-  // Das Audiogerät soll kalt sein, so wie beim ersten Film des Tages.
+  // The audio device should be cold, like for the first title of the day.
   await page.waitForTimeout(9000);
   await page.click('.route:not([hidden]) .btn-play');
   const p = await overlayPage();
@@ -69,19 +69,19 @@ for (const test of (process.env.REPEAT ? Array(Number(process.env.REPEAT)).fill(
     samples.push(await p.evaluate(() => ({ t: Number(document.querySelector('[role=slider]')?.getAttribute('aria-valuenow') ?? -1), spin: Boolean(document.querySelector('.player-spinner')) })));
   }
   const moved = samples.at(-1).t - samples[0].t;
-  // Echtes Tempo: mindestens 80 % der verstrichenen Zeit, nicht nur irgendein Fortschritt.
+  // Real speed: at least 80 % of the elapsed time, not just any progress.
   const stuck = moved < (samples.length - 1) * 2.5 * 0.8;
-  console.log(`${stuck ? 'HÄNGT ' : 'läuft '} ${test.name}: Zeit ${samples.map((s) => s.t).join(' → ')}, Ladekreis ${samples.at(-1).spin ? 'ja' : 'nein'}`);
+  console.log(`${stuck ? 'STALLS' : 'plays '} ${test.name}: time ${samples.map((s) => s.t).join(' → ')}, spinner ${samples.at(-1).spin ? 'yes' : 'no'}`}`);
   if (stuck) {
     const log = readFileSync(logFile, 'utf8').split('\n');
     const useful = log.filter((l) => !/libplacebo|\[vo\/gpu-next\/|\[osd|ffmpeg\/|\[stream|\[demux\]|\[cache|\[ytdl|\[vd\]\[d\]|statusline|\[ao\/wasapi\]\[d\]/.test(l));
     console.log(useful.slice(-45).map((l) => `    ${l.slice(0, 165)}`).join('\n'));
-    // Wie bei dir: Spulen auf der Zeitleiste
+    // As reported: seeking on the timeline
     await p.mouse.move(600, 300);
     await p.waitForTimeout(300);
     await p.locator('[role=slider]').click({ position: { x: 300, y: 10 } }).catch(() => undefined);
     await p.waitForTimeout(3000);
-    console.log(`    nach dem Klick auf die Zeitleiste: ${await p.evaluate(() => document.querySelector('[role=slider]')?.getAttribute('aria-valuenow'))} s`);
+    console.log(`    after clicking the timeline: ${await p.evaluate(() => document.querySelector('[role=slider]')?.getAttribute('aria-valuenow'))} s`);
   }
   await p.mouse.move(610, 310);
   await p.waitForTimeout(300);

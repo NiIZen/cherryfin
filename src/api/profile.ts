@@ -2,15 +2,15 @@ import type { DeviceProfile } from '@jellyfin/sdk/lib/generated-client/models';
 
 type CanPlay = (mime: string) => boolean;
 
-/** Fragt Chromium, was dieses Gerät wirklich dekodieren kann (HEVC und AV1 hängen an der Hardware). */
+/** Asks Chromium what this device can really decode (HEVC and AV1 depend on the hardware). */
 export function browserCanPlay(mime: string): boolean {
   if (typeof document === 'undefined') return false;
   return document.createElement('video').canPlayType(mime) !== '';
 }
 
 /**
- * Profil für webOS: Der Fernseher spielt über seine eigene Hardware auch MKV, HEVC und Dolby ab.
- * DTS fehlt vielen LG-Modellen, darum nur auf Wunsch. Ohne Unterstützung wandelt der Server den Ton um.
+ * Profile for webOS: the TV plays MKV, HEVC and Dolby through its own hardware.
+ * Many LG models lack DTS, so it is opt-in. Without support the server converts the audio.
  */
 export function buildWebOSProfile(maxBitrate: number, maxAudioChannels = 6, dts = false): DeviceProfile {
   const video = 'h264,hevc,vp9,av1';
@@ -45,8 +45,8 @@ export function buildWebOSProfile(maxBitrate: number, maxAudioChannels = 6, dts 
 }
 
 /**
- * Profil für mpv: Es spielt praktisch jeden Container und Codec direkt ab, auch MKV, DTS und
- * TrueHD. Der Server wandelt nur noch um, wenn die Bitrate über dem eingestellten Limit liegt.
+ * Profile for mpv: it plays practically every container and codec directly, including MKV, DTS and
+ * TrueHD. The server only converts when the bitrate is above the configured limit.
  */
 export function buildExternalPlayerProfile(maxBitrate: number, maxAudioChannels = 8): DeviceProfile {
   return {
@@ -69,7 +69,7 @@ export function buildExternalPlayerProfile(maxBitrate: number, maxAudioChannels 
     ],
     ContainerProfiles: [],
     CodecProfiles: [],
-    // Eingebettete Untertitel liest mpv selbst, auch Bildformate. Eingebrannt wird nichts.
+    // mpv reads embedded subtitles itself, image formats included. Nothing is burned in.
     SubtitleProfiles: [
       ...['srt', 'subrip', 'ass', 'ssa', 'vtt', 'webvtt', 'mov_text', 'pgs', 'pgssub', 'dvdsub', 'dvbsub', 'sub', 'idx'].map((Format) => ({ Format, Method: 'Embed' as const })),
       ...['srt', 'subrip', 'ass', 'ssa', 'vtt', 'webvtt'].map((Format) => ({ Format, Method: 'External' as const })),
@@ -78,9 +78,9 @@ export function buildExternalPlayerProfile(maxBitrate: number, maxAudioChannels 
 }
 
 /**
- * Beschreibt dem Server, was der Player kann. Der Server entscheidet damit über Direct Play,
- * Remux oder Transkodierung. MKV spielt Chromium nicht direkt ab, solche Dateien kommen deshalb
- * als HLS an und werden, wenn möglich, nur umverpackt (Stream-Copy).
+ * Tells the server what the player can do. The server uses it to choose direct play, remux or
+ * transcoding. Chromium does not play MKV directly, so such files arrive as HLS and are only
+ * repackaged (stream copy) when possible.
  */
 export function buildDeviceProfile(maxBitrate: number, canPlay: CanPlay = browserCanPlay, maxAudioChannels = 6): DeviceProfile {
   const videoCodecs = ['h264'];
@@ -126,7 +126,7 @@ export function buildDeviceProfile(maxBitrate: number, canPlay: CanPlay = browse
     ContainerProfiles: [],
     CodecProfiles: [],
     SubtitleProfiles: [
-      // Textformate liefert der Server als WebVTT aus, Bildformate brennt er beim Transkodieren ein.
+      // The server delivers text formats as WebVTT and burns image formats in when transcoding.
       ...['vtt', 'srt', 'subrip', 'ass', 'ssa', 'mov_text', 'webvtt'].map((Format) => ({ Format, Method: 'External' as const })),
       ...['pgs', 'pgssub', 'dvdsub', 'dvbsub', 'sub', 'idx'].map((Format) => ({ Format, Method: 'Encode' as const })),
     ],

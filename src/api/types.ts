@@ -23,7 +23,7 @@ export type { BaseItemKind, ItemFields, ItemFilter, ItemSortBy };
 
 export type ImageType = 'Primary' | 'Backdrop' | 'Logo' | 'Thumb';
 
-/** Zeigt auf genau ein Bild. Je nach Eintrag gehört es z. B. der Serie statt der Episode. */
+/** Points to exactly one image. Depending on the item it may belong to the show instead of the episode. */
 export interface ImageRef {
   itemId: string;
   type: ImageType;
@@ -56,13 +56,13 @@ export interface PlaybackOptions {
   mediaSourceId?: string;
   audioIndex?: number;
   subtitleIndex?: number;
-  /** Direct Play ausschließen, etwa bei anderer Audiospur oder nach einem Decoder-Fehler. */
+  /** Rule out direct play, e.g. for another audio track or after a decoder error. */
   forceTranscode?: boolean;
   maxBitrate?: number;
   maxAudioChannels?: number;
-  /** Wiedergabe mit mpv: Der Player spielt praktisch alles direkt ab. */
+  /** Playback with mpv: the player plays practically everything directly. */
   external?: boolean;
-  /** Nur Fernseher: DTS direkt abspielen. */
+  /** TV only: play DTS directly. */
   dts?: boolean;
 }
 
@@ -85,18 +85,18 @@ export interface ProgressReport {
   subtitleIndex?: number;
 }
 
-/** Gemeinsame Schnittstelle von echtem Server und Demo-Modus. */
+/** Shared interface of the real server and demo mode. */
 export interface MediaClient {
   readonly isDemo: boolean;
   readonly serverName: string;
   readonly serverUrl: string;
   readonly user: User;
-  /** Wird gerufen, wenn eine Anfrage scheitert oder ungewöhnlich lange hängt. */
+  /** Called when a request fails or hangs unusually long. */
   onConnectionIssue?: () => void;
-  /** Wird nach jeder erfolgreichen Antwort gerufen. */
+  /** Called after every successful response. */
   onConnectionOk?: () => void;
   checkConnection(): Promise<boolean>;
-  /** Bricht laufende Anfragen ab, damit sie neue nicht blockieren. */
+  /** Cancels running requests so they do not block new ones. */
   cancelPending(): void;
 
   getViews(): Promise<Item[]>;
@@ -117,7 +117,7 @@ export interface MediaClient {
   userImageUrl(user: User, width: number): string | null;
 
   getPlayback(itemId: string, options: PlaybackOptions): Promise<PlaybackSession>;
-  /** Nur Demo: rechnet den Wiedergabestand des Titels auf die Länge des Demo-Clips um. */
+  /** Demo only: maps the title’s playback position onto the length of the demo clip. */
   mapStartSeconds?(itemId: string, seconds: number): number;
   getSegments(itemId: string): Promise<Segment[]>;
   fetchSubtitleVtt(itemId: string, source: Source, index: number): Promise<string>;

@@ -1,11 +1,11 @@
 {
   "id": "org.cherryfin.webos",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "vendor": "Cherryfin",
   "type": "web",
   "main": "index.html",
   "title": "Cherryfin",
-  "appDescription": "Jellyfin-Client mit einer Oberfläche im Stil von tvOS",
+  "appDescription": "Jellyfin client with an interface in the style of tvOS",
   "icon": "icon80.png",
   "largeIcon": "icon130.png",
   "iconColor": "#0b0b10",

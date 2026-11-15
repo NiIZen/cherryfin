@@ -4,15 +4,16 @@ import type { MpvEvent } from '../app/session';
 import { trackLabel } from '../app/format';
 import { describeAudioOutput, findMpvTrack, type AudioParams, type MpvTrack } from './tracks';
 import { isTV } from '../tv/platform';
+import { t } from '../i18n';
 
-/** Tonspuren eines Videos. Der Standard-Typ kennt sie nicht, webOS bietet sie aber an. */
+/** Audio tracks of a video. The standard type lacks them, but webOS provides them. */
 type AudioTrackList = ArrayLike<{ enabled: boolean }>;
 const audioTracksOf = (el: HTMLVideoElement) => (el as HTMLVideoElement & { audioTracks?: AudioTrackList }).audioTracks;
 
 const MAX_NETWORK_RETRIES = 4;
-/** So lange darf die Zeit im laufenden Film stillstehen, bevor der Wächter eingreift. */
+/** How long the time may stand still during playback before the watchdog steps in. */
 const STALL_MS = 2000;
-/** Reihenfolge der Rettung. Zwei Neustarts genügten im Versuch meist, exklusiv ging immer. */
+/** Rescue order. In tests two restarts were usually enough; exclusive mode always worked. */
 const RESCUE = ['reload-audio', 'reload-audio', 'exclusive-audio', 'reload-audio'];
 
 export interface EngineEvents {
@@ -23,17 +24,17 @@ export interface EngineEvents {
   onDuration(seconds: number): void;
   onBuffered(seconds: number): void;
   onEnded(): void;
-  /** network: Verbindung weg. media: Datei lässt sich so nicht abspielen. fatal: Es gibt keinen weiteren Versuch. */
+  /** network: connection lost. media: the file cannot be played this way. fatal: no further attempt. */
   onError(kind: 'network' | 'media' | 'fatal', message: string): void;
   onAudioOutput(description: string): void;
-  /** Kurzer Hinweis im Player. */
+  /** Short notice in the player. */
   onNotice(message: string): void;
 }
 
 export interface PlaybackEngine {
-  /** Kann die Spur gewechselt werden, ohne dass der Server neu liefern muss? */
+  /** Can the track be switched without the server delivering again? */
   canSwitchTracks(session: PlaybackSession | null): boolean;
-  /** Lässt sich die Spur schon beim Start frei wählen, ohne dass der Server neu liefern muss? */
+  /** Can the track be chosen freely at the start without the server delivering again? */
   canChooseAtStart(session: PlaybackSession): boolean;
   load(session: PlaybackSession, startSeconds: number, tracks: { audioIndex?: number; subtitleIndex: number }): void;
   play(): void;
@@ -46,12 +47,12 @@ export interface PlaybackEngine {
   setVolume(percent: number): void;
   setMuted(muted: boolean): void;
   setAudio(index: number): void;
-  /** -1 schaltet Untertitel aus. */
+  /** -1 turns subtitles off. */
   setSubtitle(source: Source, index: number): void;
   destroy(): void;
 }
 
-/* ---------- Eingebauter Player: HTML5-Video, bei Bedarf mit HLS ---------- */
+/* ---------- Built-in player: HTML5 video, with HLS when needed ---------- */
 
 export class Html5Engine implements PlaybackEngine {
   private hls: Hls | null = null;
@@ -87,11 +88,11 @@ export class Html5Engine implements PlaybackEngine {
     });
     on('ended', () => events.onEnded());
     on('error', () => {
-      // Netzwerkfehler: Eine Transkodierung würde nichts ändern.
-      if (el.error?.code === MediaError.MEDIA_ERR_NETWORK) events.onError('network', 'Die Verbindung zum Server ist unterbrochen.');
-      else if (this.hls) events.onError('fatal', 'Dieses Video kann nicht wiedergegeben werden.');
-      // Meldet Chromium trotz canPlayType einen Decoder-Fehler, übernimmt der Server.
-      else events.onError('media', 'Dieses Video kann nicht wiedergegeben werden.');
+      // Network error: transcoding would not change anything.
+      if (el.error?.code === MediaError.MEDIA_ERR_NETWORK) events.onError('network', t('The connection to the server was lost.'));
+      else if (this.hls) events.onError('fatal', t('This video cannot be played.'));
+      // If Chromium reports a decoder error despite canPlayType, the server takes over.
+      else events.onError('media', t('This video cannot be played.'));
     });
   }
 
@@ -132,9 +133,9 @@ export class Html5Engine implements PlaybackEngine {
       instance.on(Hls.Events.ERROR, (_event, data) => {
         if (!data.fatal) return;
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          // Kurze Aussetzer überbrückt der Player selbst, mit wachsendem Abstand.
+          // The player bridges short dropouts itself, with growing intervals.
           if (networkRetries >= MAX_NETWORK_RETRIES) {
-            events.onError('network', 'Die Verbindung zum Server ist unterbrochen.');
+            events.onError('network', t('The connection to the server was lost.'));
             return;
           }
           const delay = 2000 * 2 ** networkRetries;
@@ -147,7 +148,7 @@ export class Html5Engine implements PlaybackEngine {
           mediaRecoveries += 1;
           instance.recoverMediaError();
         } else {
-          events.onError('fatal', 'Der Stream konnte nicht wiedergegeben werden.');
+          events.onError('fatal', t('The stream could not be played.'));
         }
       });
       instance.loadSource(session.url);
@@ -155,13 +156,13 @@ export class Html5Engine implements PlaybackEngine {
     } else {
       el.src = session.url;
       const seekOnce = () => {
-        // Ein Stand hinter dem Dateiende (z. B. nach Austausch der Datei) würde sofort als "beendet" gelten.
+        // A position past the end of the file (e.g. after the file was replaced) would count as "ended" right away.
         if (startSeconds > 0 && startSeconds < el.duration - 5) el.currentTime = startSeconds;
       };
       el.addEventListener('loadedmetadata', seekOnce, { once: true });
     }
     el.play().catch(() => undefined);
-    // Der erste Versuch kommt teils zu früh, bevor der Medienplayer des Fernsehers bereit ist.
+    // The first attempt sometimes comes too early, before the TV’s media player is ready.
     if (isTV) el.addEventListener('canplay', () => void el.play().catch(() => undefined), { once: true });
   }
 
@@ -202,7 +203,7 @@ export class Html5Engine implements PlaybackEngine {
   }
 
   setAudio(index: number): void {
-    // Am Computer kann Chromium die Spur nicht wechseln, der Player lädt dort neu. Der Fernseher kann es.
+    // On the computer Chromium cannot switch the track, so the player reloads there. The TV can.
     this.wantedAudio = index;
     this.applyAudio();
   }
@@ -246,7 +247,7 @@ export class Html5Engine implements PlaybackEngine {
   }
 }
 
-/* ---------- mpv: läuft im Hauptprozess, gesteuert über die Bridge ---------- */
+/* ---------- mpv: runs in the main process, controlled through the bridge ---------- */
 
 export class MpvEngine implements PlaybackEngine {
   private readonly bridge = window.native!.player;
@@ -277,10 +278,10 @@ export class MpvEngine implements PlaybackEngine {
   }
 
   /**
-   * Auf manchen Audiogeräten läuft die Abspieluhr nach dem Start nicht los, und das Video wartet
-   * auf sie. mpv meldet dabei weder Fehler noch Puffern, und auch Springen hilft nicht. Der
-   * Hauptprozess weckt das Gerät deshalb vor dem Laden. Hängt es trotzdem, startet der Wächter
-   * die Audioausgabe neu.
+   * On some audio devices the playback clock does not start after loading, and the video waits
+   * for it. mpv reports neither an error nor buffering, and seeking does not help. The main
+   * process therefore wakes the device before loading. If it still hangs, the watchdog restarts
+   * the audio output.
    */
   private checkStall() {
     const now = Date.now();
@@ -292,12 +293,12 @@ export class MpvEngine implements PlaybackEngine {
     this.lastMove = now;
     if (this.kicks >= RESCUE.length) {
       this.running = false;
-      this.events.onError('fatal', 'Die Wiedergabe startet nicht. Prüfe das Ausgabegerät in den Einstellungen.');
+      this.events.onError('fatal', t('Playback does not start. Check the output device in the settings.'));
       return;
     }
     const step = RESCUE[this.kicks];
     this.kicks += 1;
-    if (step === 'exclusive-audio') this.events.onNotice('Das Audiogerät läuft für diesen Film exklusiv. Andere Programme bleiben stumm.');
+    if (step === 'exclusive-audio') this.events.onNotice(t('The audio device is in exclusive mode for this title. Other programs stay silent.'));
     void this.bridge.command(step);
   }
 
@@ -316,10 +317,10 @@ export class MpvEngine implements PlaybackEngine {
         this.applyTracks();
         break;
       case 'audio-failed':
-        // Bei einem gescheiterten Passthrough bleibt mpv vor dem Start stehen. Mit PCM geht es von vorn los.
+        // After a failed passthrough, mpv stalls before starting. It starts over with PCM.
         if (this.passthrough && this.session) {
           this.passthrough = false;
-          events.onNotice('Das Audiogerät nimmt dieses Format nicht per Passthrough an. Der Ton läuft als PCM.');
+          events.onNotice(t('The audio device does not accept this format via passthrough. Audio plays as PCM.'));
           const { url } = this.session;
           void this.bridge.command('pcm-audio').then(() => this.bridge.load(url, this.time));
         }
@@ -327,11 +328,11 @@ export class MpvEngine implements PlaybackEngine {
       case 'end-file':
         this.running = false;
         if (event.reason === 'eof') events.onEnded();
-        else if (event.reason === 'error') events.onError('media', 'Die Datei konnte nicht abgespielt werden.');
+        else if (event.reason === 'error') events.onError('media', t('The file could not be played.'));
         break;
       case 'crash':
         this.running = false;
-        events.onError('fatal', 'Der Player wurde unerwartet beendet.');
+        events.onError('fatal', t('The player quit unexpectedly.'));
         break;
       default:
         break;
@@ -386,7 +387,7 @@ export class MpvEngine implements PlaybackEngine {
     return this.session?.source.MediaStreams ?? [];
   }
 
-  /** Setzt die gewünschten Spuren, sobald mpv die Datei geöffnet hat. */
+  /** Sets the wanted tracks as soon as mpv has opened the file. */
   private applyTracks() {
     if (this.tracksApplied || !this.session || !this.tracks.length) return;
     this.tracksApplied = true;
@@ -464,7 +465,7 @@ export class MpvEngine implements PlaybackEngine {
 
   setSubtitle(source: Source, index: number): void {
     this.wanted.subtitleIndex = index;
-    // Ohne geladene Datei kann mpv nichts setzen. applyTracks holt das nach.
+    // Without a loaded file mpv cannot set anything; applyTracks catches up.
     if (!this.tracks.length) return;
     const stream = source.MediaStreams?.find((s) => s.Type === 'Subtitle' && s.Index === index);
     if (!stream) {
@@ -482,7 +483,7 @@ export class MpvEngine implements PlaybackEngine {
       void this.bridge.command('sid', known);
       return;
     }
-    // Externe Datei oder transkodierter Stream: Der Server liefert den Untertitel einzeln.
+    // External file or transcoded stream: the server delivers the subtitle separately.
     if (!stream.IsTextSubtitleStream) return;
     void this.bridge.command('sub-add', this.client.subtitleUrl(this.itemId, source, stream), trackLabel(stream), stream.Language ?? '').then((result) => {
       const id = (result as { track_id?: number } | null)?.track_id;

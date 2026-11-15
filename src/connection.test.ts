@@ -4,7 +4,7 @@ import { buildDeviceProfile } from './api/profile';
 
 const session = { serverUrl: 'http://srv:8096', serverName: 'Test', token: 'tok', user: { Id: 'u1', Name: 'Test' } };
 
-describe('Verbindungsfehler', () => {
+describe('Connection errors', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', { getItem: () => 'geraet', setItem: () => undefined });
   });
@@ -13,7 +13,7 @@ describe('Verbindungsfehler', () => {
     vi.useRealTimers();
   });
 
-  it('meldet einen Netzwerkfehler und wirft einen verständlichen Fehler', async () => {
+  it('reports a network error and throws an understandable error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     const client = new JellyfinClient(session);
     const issue = vi.fn();
@@ -21,11 +21,11 @@ describe('Verbindungsfehler', () => {
     const error = await client.getViews().catch((e) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(0);
-    expect(error.message).toContain('nicht erreichbar');
+    expect(error.message).toContain('cannot be reached');
     expect(issue).toHaveBeenCalledOnce();
   });
 
-  it('meldet eine Anfrage, die zu lange hängt, schon vor dem Zeitlimit', async () => {
+  it('reports a request that hangs too long before the timeout', async () => {
     vi.useFakeTimers();
     let finish: (value: Response) => void = () => undefined;
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { finish = resolve; })));
@@ -41,7 +41,7 @@ describe('Verbindungsfehler', () => {
     await expect(pending).resolves.toEqual([]);
   });
 
-  it('meldet bei schnellen Antworten keinen Verbindungsfehler', async () => {
+  it('reports no connection error for fast responses', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ Items: [] }))));
     const client = new JellyfinClient(session);
@@ -52,7 +52,7 @@ describe('Verbindungsfehler', () => {
     expect(issue).not.toHaveBeenCalled();
   });
 
-  it('behandelt 401 als abgelaufene Anmeldung, nicht als Verbindungsfehler', async () => {
+  it('treats 401 as an expired sign-in, not as a connection error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 401 })));
     const client = new JellyfinClient(session);
     const issue = vi.fn();
@@ -64,9 +64,9 @@ describe('Verbindungsfehler', () => {
     expect(issue).not.toHaveBeenCalled();
   });
 
-  it('bricht hängende Anfragen ab, ohne das als Ausfall zu melden', async () => {
+  it('cancels hanging requests without reporting an outage', async () => {
     vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise<Response>((_resolve, reject) => {
-      init.signal?.addEventListener('abort', () => reject(new DOMException('abgebrochen', 'AbortError')));
+      init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
     })));
     const client = new JellyfinClient(session);
     const issue = vi.fn();
@@ -75,14 +75,14 @@ describe('Verbindungsfehler', () => {
     client.cancelPending();
     const error = await pending;
     expect(error).toBeInstanceOf(ApiError);
-    expect(error.message).toContain('abgebrochen');
+    expect(error.message).toContain('cancelled');
     expect(issue).not.toHaveBeenCalled();
   });
 
-  it('bricht Meldungen an den Server nicht ab', async () => {
+  it('does not cancel reports to the server', async () => {
     let settled = false;
     const fetchMock = vi.fn((_url: string, init: RequestInit) => new Promise<Response>((resolve, reject) => {
-      init.signal?.addEventListener('abort', () => { settled = true; reject(new DOMException('abgebrochen', 'AbortError')); });
+      init.signal?.addEventListener('abort', () => { settled = true; reject(new DOMException('aborted', 'AbortError')); });
       setTimeout(() => resolve(new Response(null, { status: 204 })), 20);
     }));
     vi.stubGlobal('fetch', fetchMock);
@@ -93,7 +93,7 @@ describe('Verbindungsfehler', () => {
     expect(settled).toBe(false);
   });
 
-  it('meldet erfolgreiche Antworten, damit eine Ausfall-Meldung sofort verschwinden kann', async () => {
+  it('reports successful responses so an outage message can disappear right away', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ Items: [] }))));
     const client = new JellyfinClient(session);
     const ok = vi.fn();
@@ -102,14 +102,14 @@ describe('Verbindungsfehler', () => {
     expect(ok).toHaveBeenCalledOnce();
   });
 
-  it('holt Daten nicht aus dem Browser-Cache', async () => {
+  it('does not take data from the browser cache', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ Items: [] })));
     vi.stubGlobal('fetch', fetchMock);
     await new JellyfinClient(session).getViews();
     expect(fetchMock.mock.calls[0][1].cache).toBe('no-store');
   });
 
-  it('prüft die Erreichbarkeit', async () => {
+  it('checks reachability', async () => {
     const client = new JellyfinClient(session);
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     await expect(client.checkConnection()).resolves.toBe(false);
@@ -119,7 +119,7 @@ describe('Verbindungsfehler', () => {
     await expect(client.checkConnection()).resolves.toBe(false);
   });
 
-  it('schickt die gewählte Kanalzahl an den Server', async () => {
+  it('sends the chosen channel count to the server', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ PlaySessionId: 'p', MediaSources: [{ Id: 'm', SupportsDirectPlay: true }] })));
     vi.stubGlobal('fetch', fetchMock);
     vi.stubGlobal('document', { createElement: () => ({ canPlayType: () => '' }) });
@@ -130,11 +130,11 @@ describe('Verbindungsfehler', () => {
   });
 });
 
-describe('Tonkanäle im Geräteprofil', () => {
-  it('nimmt standardmäßig bis zu 5.1', () => {
+describe('Audio channels in the device profile', () => {
+  it('allows up to 5.1 by default', () => {
     expect(buildDeviceProfile(1, () => false).TranscodingProfiles?.every((p) => p.MaxAudioChannels === '6')).toBe(true);
   });
-  it('begrenzt auf Stereo', () => {
+  it('limits to stereo', () => {
     expect(buildDeviceProfile(1, () => false, 2).TranscodingProfiles?.every((p) => p.MaxAudioChannels === '2')).toBe(true);
   });
 });

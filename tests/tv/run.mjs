@@ -1,4 +1,4 @@
-// Startet den Testserver und führt den TV-Test in einer Electron-Version aus.
+// Starts the test server and runs the TV test in one Electron version.
 import { spawnSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import { mkdirSync } from 'node:fs';
@@ -30,6 +30,6 @@ await new Promise((resolve) => {
   child.on('exit', () => { clearTimeout(timer); resolve(); });
 });
 const stopped = mock.state.sessions.filter((s) => s.route === '/Sessions/Playing/Stopped' && s.PositionTicks > 0);
-console.log(`${stopped.length >= 2 ? 'OK  ' : 'FAIL'} Server hat das Ende der Wiedergabe erfahren -> ${stopped.length} Meldungen`);
+console.log(`${stopped.length >= 2 ? 'OK  ' : 'FAIL'} Server learned about the end of playback -> ${stopped.length} reports`);
 mock.close();
 void spawnSync;

@@ -7,6 +7,7 @@ import { HomeScreen } from './Home';
 import { LibraryScreen } from './Library';
 import { SearchScreen } from './Search';
 import { SettingsScreen } from './Settings';
+import { t } from '../i18n';
 
 type Tab =
   | { kind: 'search'; id: 'search'; label: string }
@@ -23,13 +24,13 @@ export function TabsRoot() {
   const root = useRef<HTMLDivElement>(null);
 
   const tabs = useMemo<Tab[]>(() => [
-    { kind: 'search', id: 'search', label: 'Suche' },
-    { kind: 'home', id: 'home', label: 'Startseite' },
+    { kind: 'search', id: 'search', label: t('Search') },
+    { kind: 'home', id: 'home', label: t('Home') },
     ...library.visible,
-    { kind: 'settings', id: 'settings', label: 'Einstellungen' },
+    { kind: 'settings', id: 'settings', label: t('Settings') },
   ], [library.visible]);
 
-  // Wird der aktive Bereich in den Einstellungen ausgeblendet, geht es zurück zur Startseite.
+  // If the active section gets hidden in the settings, go back to the home screen.
   useEffect(() => {
     if (!library.loading && !tabs.some((tab) => tab.id === activeId)) setActiveId('home');
   }, [activeId, library.loading, tabs]);
@@ -42,10 +43,10 @@ export function TabsRoot() {
 
   const pageOf = (id: string) => root.current?.querySelector<HTMLElement>(`[data-tab-page="${id}"] [data-vscroll]`) ?? null;
 
-  // Zurück scrollt erst nach oben und führt dann in die Tab-Leiste, wie auf dem Apple TV.
+  // Back first scrolls to the top and then moves into the tab bar, like on Apple TV.
   useEffect(() => pushInterceptor((command) => {
     if (command !== 'back') return false;
-    // Liegt eine Detailseite oder der Player darüber, ist diese Ansicht nicht zuständig.
+    // If a detail page or the player is on top, this view is not in charge.
     if (!root.current?.checkVisibility()) return false;
     const bar = root.current.querySelector<HTMLElement>('.tabbar');
     if (!bar || bar.contains(document.activeElement)) return false;
@@ -70,7 +71,7 @@ export function TabsRoot() {
       }}
     >
       <div className={`tabbar-wrap ${barHidden ? 'bar-hidden' : ''}`}>
-        <nav className="tabbar" aria-label="Hauptnavigation" data-focus-group>
+        <nav className="tabbar" aria-label={t('Main navigation')} data-focus-group>
           {tabs.map((tab) => (
             <button
               key={tab.id}

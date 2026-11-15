@@ -7,6 +7,7 @@ import { ChevronLeft } from '../ui/Icons';
 import { AppContext, type AppContextValue, type NewRoute } from './context';
 import { isFullscreen, loadSession, loadSettings, setFullscreen } from './session';
 import { applyAppearance } from './settings';
+import { t } from '../i18n';
 
 interface Current {
   key: number;
@@ -15,8 +16,8 @@ interface Current {
 }
 
 /**
- * Inhalt des transparenten Fensters über dem mpv-Video. Es läuft als eigene Seite, daher
- * braucht es nur den Player und eine eigene Verbindung zum Server.
+ * Content of the transparent window above the mpv video. It runs as its own page, so it only
+ * needs the player and its own connection to the server.
  */
 export function PlayerWindow() {
   const [client, setClient] = useState<MediaClient | null>(null);
@@ -45,7 +46,7 @@ export function PlayerWindow() {
     let alive = true;
     (async () => {
       const [params, session] = await Promise.all([window.native!.player.params(), loadSession()]);
-      if (!params || !session) throw new Error('Keine Sitzung');
+      if (!params || !session) throw new Error(t('No session'));
       const next = new JellyfinClient(session);
       next.onUnauthorized = close;
       const item = await next.getItem(params.itemId);
@@ -86,7 +87,7 @@ export function PlayerWindow() {
       <div className="drag-strip" />
       <div className="route">
         <PlayerScreen key={current.key} item={current.item} startTicks={current.startTicks} external />
-        <button type="button" className="back-btn" tabIndex={-1} aria-label="Zurück" onClick={close}><ChevronLeft /></button>
+        <button type="button" className="back-btn" tabIndex={-1} aria-label={t('Back')} onClick={close}><ChevronLeft /></button>
       </div>
     </AppContext.Provider>
   );

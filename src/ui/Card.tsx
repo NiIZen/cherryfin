@@ -7,7 +7,7 @@ import { CheckIcon } from './Icons';
 
 export type CardVariant = 'landscape' | 'poster';
 
-/** Parallax: Die Karte kippt zum Mauszeiger, der Glanz läuft mit. */
+/** Parallax: the card tilts toward the pointer, and the shine follows. */
 export function tiltHandlers() {
   return {
     onPointerMove(event: PointerEvent<HTMLElement>) {
@@ -58,7 +58,7 @@ interface CardProps {
   variant?: CardVariant;
   onSelect?: (item: Item) => void;
   autoFocus?: boolean;
-  /** Position in einer virtualisierten Liste. */
+  /** Position in a virtualized list. */
   index?: number;
 }
 
@@ -111,7 +111,7 @@ export function PersonCard({ name, role, src, onSelect }: { name: string; role?:
   );
 }
 
-/** Abschlusskachel einer Reihe. */
+/** Final tile of a row. */
 export function MoreCard({ variant, label, icon, onSelect }: { variant: CardVariant; label: string; icon: ReactNode; onSelect: () => void }) {
   return (
     <button type="button" className={`card card-${variant} card-more`} data-focusable aria-label={label} onClick={onSelect} {...tiltHandlers()}>

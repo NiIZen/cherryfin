@@ -1,7 +1,7 @@
 /*
- * Chromium legt in jedem Fenster ein eigenes Kindfenster ("Intermediate D3D Window") an, auch ohne
- * Webinhalt. Es liegt über dem Fenster von mpv und würde das Video verdecken. Darum holt die App
- * das mpv-Fenster ausdrücklich nach oben. Dafür braucht es die Windows-API.
+ * Chromium creates its own child window ("Intermediate D3D Window") in every window, even without
+ * web content. It sits above mpv's window and would cover the video. So the app explicitly
+ * raises the mpv window, which needs the Windows API.
  */
 let api = null;
 
@@ -13,7 +13,7 @@ try {
     setPosition: user32.func('bool __stdcall SetWindowPos(intptr_t window, intptr_t insertAfter, int x, int y, int cx, int cy, uint32_t flags)'),
   };
 } catch (error) {
-  console.error('Windows-API nicht verfügbar:', error);
+  console.error('Windows API not available:', error);
 }
 
 const HWND_TOP = 0;
@@ -23,7 +23,7 @@ const SWP_NOACTIVATE = 0x0010;
 
 const available = () => api !== null;
 
-/** Hebt das Kindfenster der Klasse an, ohne Größe, Position oder Fokus zu ändern. */
+/** Raises the child window of the class without changing size, position or focus. */
 function raiseChild(parent, className) {
   if (!api) return false;
   const child = api.findChild(parent, 0, className, null);

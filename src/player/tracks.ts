@@ -10,8 +10,8 @@ export interface MpvTrack {
 const TYPE_NAMES: Record<string, string> = { Audio: 'audio', Subtitle: 'sub' };
 
 /**
- * Findet zu einer Jellyfin-Spur die passende mpv-Spur. Jellyfin zählt alle Streams der Datei
- * durch, mpv zählt je Typ. Am sichersten ist der FFmpeg-Index, sonst zählt die Reihenfolge.
+ * Finds the mpv track for a Jellyfin track. Jellyfin numbers all streams of the file, mpv numbers
+ * them per type. The FFmpeg index is the safest match, otherwise the order counts.
  */
 export function findMpvTrack(stream: Stream, tracks: MpvTrack[], streams: Stream[]): number | null {
   const type = TYPE_NAMES[stream.Type ?? ''];
@@ -39,7 +39,7 @@ export interface AudioParams {
   'channel-count'?: number;
 }
 
-/** Klartext für das Tonspur-Menü: Geht der Ton unverändert an den Receiver oder als PCM? */
+/** Plain text for the audio menu: does the audio go to the receiver unchanged, or as PCM? */
 export function describeAudioOutput(output: AudioParams | null | undefined): string {
   if (!output?.format) return '';
   if (output.format.startsWith('spdif-')) {

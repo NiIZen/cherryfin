@@ -1,4 +1,6 @@
-/* Alle einstellbaren Werte der App. Unbekannte oder fehlende Werte fallen beim Laden auf den Standard zurück. */
+import type { LanguagePreference } from '../i18n';
+
+/* All settings of the app. Unknown or missing values fall back to the default when loading. */
 
 export type SortKey = 'SortName' | 'DateCreated' | 'CommunityRating' | 'ProductionYear';
 
@@ -6,7 +8,7 @@ export interface LibraryPrefs {
   view: 'overview' | 'rows';
   layout: 'grid' | 'list';
   image: 'poster' | 'landscape';
-  /** 0 (sehr klein) bis 4 (sehr groß). */
+  /** 0 (very small) to 4 (very large). */
   size: number;
   labels: 'always' | 'focus' | 'off';
   sort: SortKey;
@@ -31,18 +33,18 @@ export type SegmentKind = 'Intro' | 'Recap' | 'Preview' | 'Commercial' | 'Outro'
 export type HotkeyAction = 'mute' | 'volumeUp' | 'volumeDown' | 'speedUp' | 'speedDown' | 'subtitles' | 'next' | 'skip';
 
 export const HOTKEY_LABELS: Record<HotkeyAction, string> = {
-  mute: 'Ton aus und an',
-  volumeUp: 'Lauter',
-  volumeDown: 'Leiser',
-  speedUp: 'Schneller',
-  speedDown: 'Langsamer',
-  subtitles: 'Untertitel ein und aus',
-  next: 'Nächste Folge',
-  skip: 'Segment überspringen',
+  mute: 'Mute and unmute',
+  volumeUp: 'Volume up',
+  volumeDown: 'Volume down',
+  speedUp: 'Faster',
+  speedDown: 'Slower',
+  subtitles: 'Subtitles on and off',
+  next: 'Next episode',
+  skip: 'Skip segment',
 };
 
 export interface PlaybackSettings {
-  /** Höchste Bitrate außerhalb des Heimnetzes. Im Heimnetz gilt maxBitrate. */
+  /** Highest bitrate outside the home network. On the home network, maxBitrate applies. */
   maxBitrateInternet: number;
   seekBack: number;
   seekForward: number;
@@ -52,14 +54,14 @@ export interface PlaybackSettings {
   volume: number;
   rememberAudio: boolean;
   rememberSubtitles: boolean;
-  /** Der Server erfährt nichts von der Wiedergabe, der Fortschritt bleibt unverändert. */
+  /** The server is not told about playback; progress stays unchanged. */
   incognito: boolean;
   mediaKeys: boolean;
   segments: Record<SegmentKind, SegmentAction>;
-  /** Tempo, solange die Maustaste auf dem Bild gehalten wird. 0 = aus. */
+  /** Speed while the mouse button is held on the picture. 0 = off. */
   speedBoost: number;
   doubleClick: 'fullscreen' | 'seek';
-  /** Bildschirmschoner nach einer Minute Pause. */
+  /** Screensaver after one minute of pause. */
   screensaver: 'off' | 'clock' | 'logo';
   hotkeys: Record<HotkeyAction, string>;
 }
@@ -69,7 +71,7 @@ export interface SubtitleSettings {
   bold: boolean;
   color: string;
   outline: number;
-  /** Abstand vom unteren Bildrand in Prozent. */
+  /** Distance from the bottom edge in percent. */
   position: number;
   background: 'none' | 'box';
 }
@@ -85,7 +87,7 @@ export interface Appearance {
   accent: string;
   background: 'black' | 'graphite' | 'slate';
   font: 'inter' | 'system';
-  /** Faktor in Prozent. */
+  /** Factor in percent. */
   scale: number;
   corners: 'sharp' | 'normal' | 'round';
   focusZoom: 'small' | 'normal' | 'large';
@@ -97,9 +99,9 @@ export interface Appearance {
   labels: 'auto' | 'always' | 'focus' | 'off';
   progress: boolean;
   watched: boolean;
-  /** Sparmodus: schaltet alles Rechenintensive auf einmal ab, etwa für schwächere Geräte. */
+  /** Power saving: turns off everything expensive at once, e.g. for less powerful devices. */
   lowPower: boolean;
-  /** Spoiler-Schutz: Bild und Inhalt ungesehener Folgen sind verdeckt. */
+  /** Spoiler protection: image and summary of unwatched episodes are hidden. */
   spoilerProtection: boolean;
   detailBackground: 'blurred' | 'sharp' | 'off';
 }
@@ -108,12 +110,14 @@ export interface Settings {
   maxBitrate: number;
   autoplayNext: boolean;
   fullscreenPlayback: boolean;
-  /** Höchstzahl der Tonkanäle: 2 (Stereo) oder 6 (5.1). */
+  /** Maximum number of audio channels: 2 (stereo) or 6 (5.1). */
   audioChannels: number;
-  /** Nur Fernseher: DTS direkt abspielen. Viele LG-Modelle können es nicht, dann wandelt der Server um. */
+  /** TV only: play DTS directly. Many LG models cannot; the server converts it then. */
   tvDts: boolean;
-  /** mpv mit Passthrough und allen Formaten, oder der eingebaute Player. */
+  /** mpv with passthrough and all formats, or the built-in player. */
   playerBackend: 'mpv' | 'builtin';
+  /** Interface language. "auto" follows the system language. */
+  language: LanguagePreference;
   audio: AudioSettings;
   playback: PlaybackSettings;
   subtitles: SubtitleSettings;
@@ -125,13 +129,13 @@ export interface Settings {
     heroSource: 'new' | 'continue' | 'nextup' | 'mixed';
     heroDetails: boolean;
     continueMode: 'combined' | 'separate' | 'resume' | 'nextup';
-    /** Nächste Folgen nur von Serien, die in so vielen Tagen zuletzt liefen. 0 = alle. */
+    /** Next up only from shows watched within this many days. 0 = all. */
     nextUpDays: number;
     rows: HomeRowPref[];
   };
-  /** Standard für alle Bereiche. */
+  /** Default for all sections. */
   library: LibraryPrefs;
-  /** Eigene Anpassungen einzelner Bereiche, nach Bereichs-ID. */
+  /** Adjustments of single sections, by section ID. */
   libraryOverrides: Record<string, Partial<LibraryPrefs>>;
   tabs: {
     merge: boolean;
@@ -141,24 +145,24 @@ export interface Settings {
 }
 
 export const HOME_ROW_LABELS: Record<HomeRowId, string> = {
-  continue: 'Weiter ansehen',
-  movies: 'Neue Filme',
-  series: 'Neue Serien',
-  recommendations: 'Empfehlungen',
-  favorites: 'Meine Merkliste',
-  libraries: 'Mediatheken',
+  continue: 'Continue watching',
+  movies: 'New movies',
+  series: 'New shows',
+  recommendations: 'Recommendations',
+  favorites: 'My list',
+  libraries: 'Libraries',
 };
 
 const HOME_ROW_IDS = Object.keys(HOME_ROW_LABELS) as HomeRowId[];
 
 export const ACCENTS = [
-  { id: 'white', label: 'Weiß', bg: '#ffffff', fg: '#000000' },
-  { id: 'blue', label: 'Blau', bg: '#0a84ff', fg: '#ffffff' },
-  { id: 'purple', label: 'Violett', bg: '#aa5cc3', fg: '#ffffff' },
+  { id: 'white', label: 'White', bg: '#ffffff', fg: '#000000' },
+  { id: 'blue', label: 'Blue', bg: '#0a84ff', fg: '#ffffff' },
+  { id: 'purple', label: 'Purple', bg: '#aa5cc3', fg: '#ffffff' },
   { id: 'pink', label: 'Pink', bg: '#ff375f', fg: '#ffffff' },
   { id: 'orange', label: 'Orange', bg: '#ff9f0a', fg: '#000000' },
-  { id: 'green', label: 'Grün', bg: '#30d158', fg: '#000000' },
-  { id: 'teal', label: 'Türkis', bg: '#40c8e0', fg: '#000000' },
+  { id: 'green', label: 'Green', bg: '#30d158', fg: '#000000' },
+  { id: 'teal', label: 'Turquoise', bg: '#40c8e0', fg: '#000000' },
 ];
 
 export const DEFAULT_LIBRARY: LibraryPrefs = {
@@ -182,6 +186,7 @@ export const DEFAULT_SETTINGS: Settings = {
   audioChannels: 6,
   tvDts: false,
   playerBackend: 'mpv',
+  language: 'auto',
   audio: { mode: 'pcm', formats: ['ac3', 'eac3', 'dts'], exclusive: false, device: 'auto' },
   playback: {
     maxBitrateInternet: 120_000_000,
@@ -267,7 +272,7 @@ export function prefsFor(settings: Settings, tabId?: string): LibraryPrefs {
   return { ...settings.library, ...(tabId ? settings.libraryOverrides[tabId] : undefined) };
 }
 
-/** Verschiebt ein Element um eine Position. Ränder bleiben unverändert. */
+/** Moves an element by one position. The ends stay unchanged. */
 export function moveItem<T>(list: T[], index: number, delta: number): T[] {
   const target = index + delta;
   if (index < 0 || target < 0 || target >= list.length) return list;
@@ -281,7 +286,7 @@ const BACKGROUNDS = { black: '#000000', graphite: '#111114', slate: '#141a24' };
 const RADII = { sharp: '0.25rem', normal: '0.875rem', round: '1.5rem' };
 const ZOOMS = { small: '1.05', normal: '1.1', large: '1.16' };
 
-/** Untertitel im eingebauten Player. Bei mpv übernimmt das eine Startoption. */
+/** Subtitles in the built-in player. With mpv, a start option does this. */
 function applySubtitleStyle(s: SubtitleSettings) {
   let style = document.getElementById('cherryfin-cue') as HTMLStyleElement | null;
   if (!style) {
@@ -289,7 +294,7 @@ function applySubtitleStyle(s: SubtitleSettings) {
     style.id = 'cherryfin-cue';
     document.head.appendChild(style);
   }
-  // Nur geprüfte Werte: Die Einstellung landet hier direkt im Stylesheet.
+  // Validated values only: the setting ends up directly in the stylesheet.
   const color = /^#[0-9a-f]{6}$/i.test(s.color) ? s.color : '#ffffff';
   const size = Math.max(16, Math.min(120, Number(s.size) || 44)) / 16;
   const outline = Math.max(0, Math.min(8, Number(s.outline) || 0));
@@ -302,7 +307,7 @@ function applySubtitleStyle(s: SubtitleSettings) {
   }`;
 }
 
-/** Überträgt die Darstellung auf die CSS-Variablen der Seite. */
+/** Applies the appearance to the CSS variables of the page. */
 export function applyAppearance(settings: Settings) {
   const a = settings.appearance;
   const root = document.documentElement;

@@ -6,12 +6,12 @@ const PASSTHROUGH_FORMATS = ['ac3', 'eac3', 'dts', 'dts-hd', 'truehd'];
 const OBSERVED = ['time-pos', 'duration', 'pause', 'paused-for-cache', 'seeking', 'demuxer-cache-time', 'track-list', 'audio-codec-name', 'audio-params', 'audio-out-params'];
 const TIME_EVENT_MS = 250;
 
-/** Baut die Startoptionen. Der Renderer liefert nur Einstellungen, niemals fertige Optionen. */
+/** Builds the start options. The renderer only supplies settings, never ready-made options. */
 const WAKE_MS = 600;
 
 const validDevice = (device) => typeof device === 'string' && /^(auto|wasapi\/\{[0-9a-fA-F-]+\})$/.test(device);
 
-/** Zahl aus den Einstellungen, auf einen sinnvollen Bereich begrenzt. Alles andere fällt weg. */
+/** A number from the settings, limited to a sensible range. Anything else is dropped. */
 function bounded(value, min, max) {
   const number = Number(value);
   if (value === undefined || value === null || value === '' || !Number.isFinite(number)) return null;
@@ -78,10 +78,10 @@ function wakeArgs(device) {
 }
 
 /**
- * Hat das Audiogerät einige Sekunden nichts ausgegeben, läuft auf manchen Treibern (nachgewiesen
- * mit Intel Smart Sound) die Abspieluhr des ersten Tonstroms nicht los: mpv schreibt Ton, die
- * Filmzeit bleibt aber stehen. Der nächste Strom läuft normal, wenn der erste geschlossen wurde.
- * Deshalb öffnet und schließt ein kurzer, stiller Prozess das Gerät vor dem Laden.
+ * When the audio device has been silent for a few seconds, some drivers (proven with Intel Smart
+ * Sound) do not start the playback clock of the first audio stream: mpv writes audio, but the
+ * playback time stands still. The next stream runs normally once the first one was closed.
+ * So a short, silent process opens and closes the device before loading.
  */
 function wakeAudioDevice(executable, device, ms = WAKE_MS) {
   return new Promise((resolve) => {
@@ -104,7 +104,7 @@ function wakeAudioDevice(executable, device, ms = WAKE_MS) {
   });
 }
 
-/** Wertet die Ausgabe von --audio-device=help aus: Automatisch und alle WASAPI-Geräte. */
+/** Parses the output of --audio-device=help: automatic and all WASAPI devices. */
 function parseAudioDevices(text) {
   const devices = [];
   for (const line of String(text).split(/\r?\n/)) {
@@ -122,7 +122,7 @@ function listAudioDevices(executable) {
   });
 }
 
-/** Ein laufendes mpv, gesteuert über die JSON-Schnittstelle (Named Pipe). */
+/** A running mpv, controlled through the JSON interface (named pipe). */
 class MpvProcess extends EventEmitter {
   constructor(executable, options) {
     super();
@@ -135,7 +135,7 @@ class MpvProcess extends EventEmitter {
     this.child = spawn(executable, mpvArgs(options), { windowsHide: false, stdio: 'ignore' });
     this.child.on('exit', (code) => {
       this.exited = true;
-      for (const { reject } of this.pending.values()) reject(new Error('mpv wurde beendet'));
+      for (const { reject } of this.pending.values()) reject(new Error('mpv has exited'));
       this.pending.clear();
       if (!this.stopped) this.emit('event', { type: 'crash', code });
     });
@@ -147,7 +147,7 @@ class MpvProcess extends EventEmitter {
 
   async connect() {
     for (let attempt = 0; attempt < 100; attempt++) {
-      if (this.stopped || this.exited) throw new Error('mpv wurde beendet');
+      if (this.stopped || this.exited) throw new Error('mpv has exited');
       try {
         this.socket = await new Promise((resolve, reject) => {
           const socket = net.connect(this.pipe, () => resolve(socket));
@@ -158,7 +158,7 @@ class MpvProcess extends EventEmitter {
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
     }
-    if (!this.socket) throw new Error('mpv antwortet nicht');
+    if (!this.socket) throw new Error('mpv does not respond');
 
     let buffer = '';
     this.socket.setEncoding('utf8');
@@ -173,7 +173,7 @@ class MpvProcess extends EventEmitter {
       }
     });
     OBSERVED.forEach((name, index) => this.write({ command: ['observe_property', index + 1, name] }));
-    // Scheitert die Audioausgabe, meldet mpv das nur im Protokoll.
+    // If the audio output fails, mpv only reports it in the log.
     this.write({ command: ['request_log_messages', 'error'] });
   }
 
@@ -193,7 +193,7 @@ class MpvProcess extends EventEmitter {
     }
     if (message.event === 'property-change') {
       if (message.name === 'time-pos') {
-        // Die Position kommt sehr häufig, der Oberfläche reichen wenige Updates pro Sekunde.
+        // The position arrives very often; a few updates per second are enough for the interface.
         const now = Date.now();
         if (now - this.lastTimeEvent < TIME_EVENT_MS) return;
         this.lastTimeEvent = now;
@@ -214,7 +214,7 @@ class MpvProcess extends EventEmitter {
 
   async command(command) {
     await this.ready;
-    if (this.exited) throw new Error('mpv wurde beendet');
+    if (this.exited) throw new Error('mpv has exited');
     const id = ++this.requestId;
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
@@ -229,7 +229,7 @@ class MpvProcess extends EventEmitter {
       this.write({ command: ['quit'] });
       this.socket?.end();
     } catch {
-      /* Bereits getrennt. */
+      /* Already disconnected. */
     }
     const { child } = this;
     setTimeout(() => {
