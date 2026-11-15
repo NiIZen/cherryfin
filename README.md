@@ -13,7 +13,7 @@ Fertige Pakete stehen unter [Releases](../../releases/latest):
 
 | Datei | Für |
 | --- | --- |
-| `Cherryfin Setup <Version>.exe` | Windows, mit Installation |
+| `Cherryfin.Setup.<Version>.exe` | Windows, mit Installation |
 | `Cherryfin-portable-<Version>.exe` | Windows, ohne Installation |
 | `org.cherryfin.webos_<Version>_all.ipk` | LG-Fernseher mit webOS 5 oder neuer, über den Homebrew Channel oder den Developer Mode |
 
