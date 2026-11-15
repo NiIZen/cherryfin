@@ -19,7 +19,7 @@ import { buildDeviceProfile, buildExternalPlayerProfile, buildWebOSProfile } fro
 import { isTV } from '../tv/platform';
 
 const CLIENT_NAME = 'Cherryfin';
-const CLIENT_VERSION = '0.6.1';
+const CLIENT_VERSION = '0.6.2';
 /** Danach gilt eine Anfrage als gescheitert. Große Seiten dürfen dauern, hängen darf nichts ewig. */
 const REQUEST_TIMEOUT_MS = 30_000;
 /** Antwortet der Server so lange nicht, wird nebenbei seine Erreichbarkeit geprüft. */

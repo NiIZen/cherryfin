@@ -1,6 +1,6 @@
 {
   "id": "org.cherryfin.webos",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "vendor": "Cherryfin",
   "type": "web",
   "main": "index.html",

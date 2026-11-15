@@ -1,7 +1,7 @@
 {
   "name": "cherryfin",
   "productName": "Cherryfin",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "private": true,
   "description": "Jellyfin-Client für Windows mit tvOS-artiger Oberfläche",
   "main": "electron/main.cjs",

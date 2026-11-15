@@ -321,6 +321,7 @@ export function applyAppearance(settings: Settings) {
   for (const [name, value] of Object.entries(vars)) root.style.setProperty(name, value);
   root.dataset.tilt = a.tilt && !a.lowPower ? 'on' : 'off';
   root.dataset.glass = a.glass && !a.lowPower ? 'on' : 'off';
+  root.dataset.lowPower = a.lowPower ? 'on' : 'off';
   root.dataset.motion = a.motion && !a.lowPower ? 'on' : 'off';
   root.dataset.spoiler = a.spoilerProtection ? 'on' : 'off';
   root.dataset.detailBg = a.detailBackground;
