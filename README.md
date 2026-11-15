@@ -2,7 +2,7 @@
 
 ![Cherryfin](electron/icon.png)
 
-Jellyfin-Client für Windows mit einer Oberfläche im Stil von tvOS und der Apple-TV-App.
+Jellyfin-Client für Windows und WebOS (LG) mit einer Oberfläche im Stil von tvOS und der Apple-TV-App.
 Unabhängiges Projekt ohne Verbindung zu Apple oder dem Jellyfin-Projekt.
 
 Das Zeichen liegt als SVG in `branding/cherryfin.svg`.
