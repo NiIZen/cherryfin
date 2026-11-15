@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-webos/
+release/
+*.log
+# mpv ist zu groß für Git (GitHub erlaubt 100 MB pro Datei), siehe README.
+vendor/mpv/*.exe
+tests/e2e/node_modules/
+tests/e2e/shots/
+tests/e2e/hls/
+tests/e2e/media/
+tests/tv/shots/
+tests/tv/electron-*/
+.claude/

@@ -1,0 +1,23 @@
+# Vorlage für packages/org.cherryfin.webos.yml in webosbrew/apps-repo.
+# Vor dem Einreichen NAME und REPO ersetzen, Screenshots ergänzen und auf einem echten Fernseher testen.
+title: Cherryfin
+iconUri: https://github.com/NAME/REPO/releases/latest/download/icon160.png
+manifestUrl: https://github.com/NAME/REPO/releases/latest/download/org.cherryfin.webos.manifest.json
+category: multimedia
+pool: main
+requirements:
+  webosRelease: "5.0"
+shortDescription: Jellyfin-Client mit einer Oberfläche im Stil von tvOS
+description: |
+  Cherryfin ist ein inoffizieller Client für den eigenen Jellyfin-Server, mit einer ruhigen
+  Oberfläche im Stil von tvOS und voller Bedienung per Fernbedienung.
+
+  - Bibliotheken als eigene Bereiche mit A–Z-Übersicht und Buchstaben-Leiste
+  - Serien, Filme, Suche, Merkliste und "Weiter ansehen"
+  - Direktes Abspielen über den Medienplayer des Fernsehers, Umwandlung durch den Server nur bei Bedarf
+  - Anpassbare Darstellung: Farben, Größen, Raster oder Liste, Reihen und Bereiche
+
+  Ein eigener Jellyfin-Server ist nötig. Ohne Server zeigt ein Demo-Modus die Oberfläche.
+  Keine Verbindung zu Apple oder dem Jellyfin-Projekt.
+
+  Bei der Entwicklung wurde KI-Unterstützung (Claude) eingesetzt.
