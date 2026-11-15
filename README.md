@@ -7,6 +7,14 @@ Unabhängiges Projekt ohne Verbindung zu Apple oder dem Jellyfin-Projekt.
 
 Das Zeichen liegt als SVG in `branding/cherryfin.svg`.
 
+## Bilder
+
+![Startseite mit Titelbereich und „Weiter ansehen“](docs/screenshots/startseite.webp)
+
+![Detailseite eines Films](docs/screenshots/details.webp)
+
+![Einstellungen, Bereich Darstellung](docs/screenshots/einstellungen.webp)
+
 ## Herunterladen
 
 Fertige Pakete stehen unter [Releases](../../releases/latest):
