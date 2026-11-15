@@ -29,7 +29,27 @@ Die Windows-Pakete sind nicht signiert. Windows SmartScreen warnt deshalb beim e
 
 ## Starten
 
-`mpv.exe` liegt nicht im Repository, weil die Datei für Git zu groß ist. Vor dem ersten Start den Build [mpv-x86_64-20261105-git-3138fc8eea](https://github.com/zhongfly/mpv-winbuild/releases) von zhongfly/mpv-winbuild herunterladen und `mpv.exe` nach `vendor/mpv/` legen. Ohne mpv läuft die App mit dem eingebauten Player.
+Dieser Abschnitt gilt nur, wenn du Cherryfin selbst aus dem Quellcode baust. Die fertigen Pakete unter [Releases](../../releases/latest) enthalten mpv bereits.
+
+### Warum mpv?
+
+[mpv](https://mpv.io/) ist ein freier Videoplayer, den Cherryfin unter Windows zum Abspielen nutzt. Der eingebaute Player von Electron (Chromium) kann viele Formate nicht selbst abspielen, die in Filmsammlungen üblich sind. Der Jellyfin-Server muss sie dann live umwandeln (transkodieren). Das kostet Rechenleistung auf dem Server und oft Bildqualität. mpv spielt dagegen praktisch alles direkt ab:
+
+| | Mit mpv | Nur eingebauter Player |
+| --- | --- | --- |
+| MKV, HEVC (H.265), AV1 | direkt | meist Umwandlung durch den Server |
+| Ton in DTS, TrueHD, E-AC3 | direkt | Umwandlung durch den Server |
+| Passthrough an einen AV-Receiver (Dolby Atmos, DTS:X) | ja | nein |
+| Bilduntertitel (PGS, DVD) | direkt | vom Server ins Bild eingebrannt |
+| Tonspur wechseln | sofort | Server liefert den Film neu |
+
+Ohne mpv läuft Cherryfin trotzdem, dann mit dem eingebauten Player. Unter **Einstellungen > Wiedergabe** lässt sich jederzeit zwischen beiden wechseln. Auf dem Fernseher (webOS) spielt immer der Medienplayer des Fernsehers ab, mpv wird dort nicht gebraucht.
+
+### mpv einrichten
+
+`mpv.exe` liegt nicht im Repository, weil die Datei mit über 100 MB für GitHub zu groß ist. Vor dem ersten Start den Build [mpv-x86_64-20261105-git-3138fc8eea](https://github.com/zhongfly/mpv-winbuild/releases) von zhongfly/mpv-winbuild herunterladen und `mpv.exe` nach `vendor/mpv/` legen. Cherryfin wurde mit genau diesem Build getestet.
+
+### Bauen und starten
 
 ```bash
 npm install
