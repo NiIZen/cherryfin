@@ -21,7 +21,7 @@ Fertige Pakete stehen unter [Releases](../../releases/latest):
 | --- | --- |
 | `Cherryfin.Setup.<Version>.exe` | Windows, mit Installation |
 | `Cherryfin-portable-<Version>.exe` | Windows, ohne Installation |
-| `org.cherryfin.webos_<Version>_all.ipk` | LG-Fernseher mit webOS 5 oder neuer, über den Homebrew Channel oder den Developer Mode |
+| `org.cherryfin.webos_<Version>_all.ipk` | LG-Fernseher mit webOS 5 oder neuer, über den Developer Mode |
 
 Die Windows-Pakete sind nicht signiert. Windows SmartScreen warnt deshalb beim ersten Start.
 
