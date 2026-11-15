@@ -5,7 +5,7 @@
 Jellyfin-Client für Windows mit einer Oberfläche im Stil von tvOS und der Apple-TV-App.
 Unabhängiges Projekt ohne Verbindung zu Apple oder dem Jellyfin-Projekt.
 
-Bis Version 0.5 hieß die App JellyTV. Beim ersten Start übernimmt Cherryfin Anmeldung und Einstellungen aus dem alten Ordner `%APPDATA%\JellyTV`. Eine installierte JellyTV-Version bleibt bestehen und lässt sich in Windows unter „Apps“ entfernen. Das Icon liegt als SVG in `branding/cherryfin.svg`.
+Das Zeichen liegt als SVG in `branding/cherryfin.svg`.
 
 ## Herunterladen
 

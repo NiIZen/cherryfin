@@ -12,7 +12,7 @@ Die Fenstertests starten die echte Electron-App gegen einen kleinen Jellyfin-Tes
 | `e2e/run4.mjs` | mpv im echten Fensteraufbau |
 | `e2e/run5.mjs` | Einstellungen aus Fladder |
 | `e2e/matrix.mjs` | mpv mit echtem Audiogerät, jeweils mit kaltem Gerät |
-| `e2e/migrate.mjs` | Umzug der Daten von JellyTV zu Cherryfin |
+| `e2e/migrate.mjs` | Übernahme älterer Einstellungen beim ersten Start |
 | `e2e/builtin-cold.mjs` | eingebauter Player mit kaltem Audiogerät |
 | `tv/run.mjs` | webOS-Build in Electron 4 (Chromium 69) und 8 (Chromium 80) |
 
