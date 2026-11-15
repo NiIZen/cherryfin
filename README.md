@@ -5,6 +5,8 @@
 Jellyfin-Client für Windows und WebOS (LG) mit einer Oberfläche im Stil von tvOS und der Apple-TV-App.
 Unabhängiges Projekt ohne Verbindung zu Apple oder dem Jellyfin-Projekt.
 
+Die Programme wurden vollständig von Claude Code geschrieben.
+
 ## Bilder
 
 ![Startseite mit Titelbereich und „Weiter ansehen“](docs/screenshots/startseite.webp)
