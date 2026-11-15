@@ -107,7 +107,7 @@ npm run package:webos
 Das erzeugt in `release/webos/` das IPK-Paket, das Manifest für den Homebrew Channel und das Icon. Mit `--source` und `--icon` trägt das Skript die öffentlichen Adressen ins Manifest ein:
 
 ```bash
-node scripts/package-webos.mjs --source https://github.com/NAME/REPO --icon https://github.com/NAME/REPO/releases/latest/download/icon160.png
+node scripts/package-webos.mjs --source https://github.com/NiIZen/cherryfin --icon https://github.com/NiIZen/cherryfin/releases/latest/download/icon160.png
 ```
 
 Mindestens nötig ist webOS 5 (Modelle ab 2020, Chromium 68). Unterschiede zur Windows-App:

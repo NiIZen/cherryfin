@@ -1,8 +1,8 @@
 # Vorlage für packages/org.cherryfin.webos.yml in webosbrew/apps-repo.
 # Vor dem Einreichen NAME und REPO ersetzen, Screenshots ergänzen und auf einem echten Fernseher testen.
 title: Cherryfin
-iconUri: https://github.com/NAME/REPO/releases/latest/download/icon160.png
-manifestUrl: https://github.com/NAME/REPO/releases/latest/download/org.cherryfin.webos.manifest.json
+iconUri: https://github.com/NiIZen/cherryfin/releases/latest/download/icon160.png
+manifestUrl: https://github.com/NiIZen/cherryfin/releases/latest/download/org.cherryfin.webos.manifest.json
 category: multimedia
 pool: main
 requirements:
